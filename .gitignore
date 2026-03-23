@@ -1,0 +1,42 @@
+# Archivos de Dart y Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Archivos de Android
+.gradle/
+local.properties
+*.kwks
+*.keystore
+*.jks
+project.properties
+AndroidStudio/
+capture/
+
+# Archivos de iOS (Cuidado: no ignorar el Podfile)
+*.swp
+*.lock
+.DS_Store
+DerivedData/
+Pods/
+ServiceDeviceRepo/
+*.moved-aside
+*.xcuserstate
+
+# Archivos de IDEs (VS Code y IntelliJ)
+.idea/
+*.iml
+*.iws
+.vscode/
+.history/
+
+# Configuración Personal / Secretos
+.env
+auth_config.json
+
+# Archivos de logs
+*.log
