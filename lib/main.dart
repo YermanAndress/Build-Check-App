@@ -136,17 +136,17 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
             Row(
               children: [
                 Expanded(
-                  child: _QuickActionCard(
+                  child: _QuickActionButton(
                     label: 'Registrar\nEntrada',
                     icon: Icons.arrow_downward_rounded,
-                    iconBgColor: const Color(0xFFFFCDD2),
-                    iconColor: const Color(0xFFE57373),
+                    iconBgColor: const Color.fromARGB(255, 191, 230, 196),
+                    iconColor: const Color(0xFF4CAF50),
                     onTap: () {},
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _QuickActionCard(
+                  child: _QuickActionButton(
                     label: 'Registrar\nSalida',
                     icon: Icons.arrow_upward_rounded,
                     iconBgColor: const Color(0xFFF8BBD0),
@@ -156,7 +156,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _QuickActionCard(
+                  child: _QuickActionButton(
                     label: 'Escanear\nFactura',
                     icon: Icons.camera_alt_outlined,
                     iconBgColor: const Color(0xFFE0E0E0),
@@ -214,11 +214,30 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           elevation: 0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.folder_outlined), activeIcon: Icon(Icons.folder), label: 'Proyectos'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_outlined), activeIcon: Icon(Icons.inventory), label: 'Inventario'),
-            BottomNavigationBarItem(icon: Icon(Icons.swap_vert), label: 'Movimientos'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reporte'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.folder_outlined),
+              activeIcon: Icon(Icons.folder),
+              label: 'Proyectos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_outlined),
+              activeIcon: Icon(Icons.inventory),
+              label: 'Inventario',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_vert),
+              label: 'Movimientos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Reporte',
+            ),
           ],
         ),
       ),
@@ -254,6 +273,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,10 +315,10 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── Quick Action Card ────────────────────────────────────────────────────────
+// ─── Quick Action Button ──────────────────────────────────────────────────────
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
     required this.label,
     required this.icon,
     required this.iconBgColor,
@@ -314,38 +334,48 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: iconBgColor.withOpacity(0.5),
+        highlightColor: iconBgColor.withOpacity(0.25),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: iconColor, size: 26),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF444444),
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF444444),
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -377,6 +407,7 @@ class _MovementItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
       ),
       child: Row(
         children: [
