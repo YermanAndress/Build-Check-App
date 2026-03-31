@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const BuildCheckApp());
@@ -305,6 +307,10 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
   bool _loadingMateriales = true;
   String? _errorMateriales;
 
+  // Foto (opcional)
+  XFile? _fotoSeleccionada;
+  Uint8List? _fotoBytes;       // para previsualizar en Web
+
   // Envío
   bool _enviando = false;
 
@@ -371,6 +377,27 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
     }
   }
 
+  // ── Abre el selector de foto ──
+  Future<void> _seleccionarFoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _fotoSeleccionada = picked;
+        _fotoBytes = bytes;
+      });
+    }
+  }
+
+  void _quitarFoto() => setState(() {
+        _fotoSeleccionada = null;
+        _fotoBytes = null;
+      });
+
   // ── Abre el date picker ──
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
@@ -398,12 +425,16 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
 
     setState(() => _enviando = true);
 
+    // TODO: cuando el backend soporte fotos, subir _fotoBytes con multipart
+    // Por ahora se envía solo el nombre del archivo como referencia (o null)
+    final nombreFoto = _fotoSeleccionada?.name;
+
     final body = jsonEncode({
       'tipoMovimiento': 'ENTRADA',
       'cantidad': double.parse(_cantidadCtrl.text.trim()),
       'fecha': _fecha.toIso8601String(),
       'usuarioId': 8,                          // TODO: reemplazar con usuario autenticado
-      'evidenciaFotografica': null,            // TODO: adjuntar foto si se implementa
+      'evidenciaFotografica': nombreFoto,      // null si no se seleccionó foto
       'materialId': _materialSeleccionado!.id,
     });
 
@@ -620,6 +651,97 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
                 ),
               ),
             ),
+
+            const SizedBox(height: 14),
+
+            // ── Foto (opcional) ──
+            Row(
+              children: [
+                const _FieldLabel('Evidencia fotográfica'),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('Opcional',
+                      style: TextStyle(fontSize: 10, color: Color(0xFF888888))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // Sin foto seleccionada → botón para elegir
+            if (_fotoBytes == null)
+              GestureDetector(
+                onTap: _seleccionarFoto,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: const Color(0xFFCCCCCC), style: BorderStyle.solid),
+                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFFAFAFA),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.add_photo_alternate_outlined,
+                          size: 32, color: Color(0xFFBBBBBB)),
+                      SizedBox(height: 6),
+                      Text('Toca para agregar una foto',
+                          style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA))),
+                    ],
+                  ),
+                ),
+              )
+            // Con foto seleccionada → previsualización + botón quitar
+            else
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      _fotoBytes!,
+                      width: double.infinity,
+                      height: 160,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: _quitarFoto,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _fotoSeleccionada!.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
             const SizedBox(height: 24),
 
