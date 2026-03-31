@@ -33,6 +33,20 @@ class ApiConfig {
 
 enum MovementType { entrada, salida }
 
+// Modelo ligero solo para contar movimientos del día
+class _MovimientoResumen {
+  final String tipoMovimiento;
+  final DateTime fecha;
+
+  const _MovimientoResumen({required this.tipoMovimiento, required this.fecha});
+
+  factory _MovimientoResumen.fromJson(Map<String, dynamic> json) =>
+      _MovimientoResumen(
+        tipoMovimiento: json['tipoMovimiento'] ?? '',
+        fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
+      );
+}
+
 class MaterialItem {
   final int id;
   final String nombre;
@@ -83,13 +97,61 @@ class BuildCheckHome extends StatefulWidget {
 class _BuildCheckHomeState extends State<BuildCheckHome> {
   int _selectedIndex = 0;
 
+  // Contador de entradas de hoy
+  int _entradasHoy = 0;
+  bool _cargandoEntradas = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarEntradasHoy();
+  }
+
+  Future<void> _cargarEntradasHoy() async {
+    setState(() => _cargandoEntradas = true);
+    try {
+      final res = await http.get(Uri.parse(ApiConfig.movimientos));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        List lista = [];
+
+        // Manejar ambas estructuras: lista directa o {"movimientos": [...]}
+        if (decoded is List) {
+          lista = decoded;
+        } else if (decoded is Map && decoded.containsKey('movimientos')) {
+          lista = decoded['movimientos'];
+        }
+
+        final hoy = DateTime.now();
+        final count = lista
+            .map((e) => _MovimientoResumen.fromJson(e as Map<String, dynamic>))
+            .where((m) =>
+                m.tipoMovimiento.toUpperCase() == 'ENTRADA' &&
+                m.fecha.year == hoy.year &&
+                m.fecha.month == hoy.month &&
+                m.fecha.day == hoy.day)
+            .length;
+
+        setState(() {
+          _entradasHoy = count;
+          _cargandoEntradas = false;
+        });
+      } else {
+        setState(() => _cargandoEntradas = false);
+      }
+    } catch (e) {
+      debugPrint('Error cargando entradas hoy: $e');
+      setState(() => _cargandoEntradas = false);
+    }
+  }
+
   void _abrirRegistrarEntrada() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,        // permite que suba con el teclado
       backgroundColor: Colors.transparent,
       builder: (_) => const _RegistrarEntradaSheet(),
-    );
+    ).then((_) => _cargarEntradasHoy()); // refresca el contador al cerrar
   }
 
   @override
@@ -170,12 +232,13 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 Expanded(
                   child: _StatCard(
                     label: 'Entradas hoy',
-                    value: '5',
+                    value: _cargandoEntradas ? '—' : '$_entradasHoy',
                     sublabel: 'Movimientos',
                     icon: Icons.subdirectory_arrow_left,
                     iconColor: const Color(0xFF4CAF50),
                     backgroundColor: const Color(0xFFEDF7EE),
                     valueColor: const Color(0xFF1A1A1A),
+                    isLoading: _cargandoEntradas,
                   ),
                 ),
               ],
@@ -846,6 +909,7 @@ class _StatCard extends StatelessWidget {
     required this.iconColor,
     required this.backgroundColor,
     required this.valueColor,
+    this.isLoading = false,
   });
 
   final String label;
@@ -855,6 +919,7 @@ class _StatCard extends StatelessWidget {
   final Color iconColor;
   final Color backgroundColor;
   final Color valueColor;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -885,15 +950,25 @@ class _StatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
-              height: 1,
+          if (isLoading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF4CAF50),
+              ),
+            )
+          else
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: valueColor,
+                height: 1,
+              ),
             ),
-          ),
           const SizedBox(height: 2),
           Text(
             sublabel,
