@@ -97,25 +97,25 @@ class BuildCheckHome extends StatefulWidget {
 class _BuildCheckHomeState extends State<BuildCheckHome> {
   int _selectedIndex = 0;
 
-  // Contador de entradas de hoy
+  // Contadores del día
   int _entradasHoy = 0;
-  bool _cargandoEntradas = true;
+  int _salidasHoy  = 0;
+  bool _cargandoStats = true;
 
   @override
   void initState() {
     super.initState();
-    _cargarEntradasHoy();
+    _cargarStatsHoy();
   }
 
-  Future<void> _cargarEntradasHoy() async {
-    setState(() => _cargandoEntradas = true);
+  Future<void> _cargarStatsHoy() async {
+    setState(() => _cargandoStats = true);
     try {
       final res = await http.get(Uri.parse(ApiConfig.movimientos));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List lista = [];
 
-        // Manejar ambas estructuras: lista directa o {"movimientos": [...]}
         if (decoded is List) {
           lista = decoded;
         } else if (decoded is Map && decoded.containsKey('movimientos')) {
@@ -123,35 +123,44 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         }
 
         final hoy = DateTime.now();
-        final count = lista
+        final resumen = lista
             .map((e) => _MovimientoResumen.fromJson(e as Map<String, dynamic>))
             .where((m) =>
-                m.tipoMovimiento.toUpperCase() == 'ENTRADA' &&
                 m.fecha.year == hoy.year &&
                 m.fecha.month == hoy.month &&
                 m.fecha.day == hoy.day)
-            .length;
+            .toList();
 
         setState(() {
-          _entradasHoy = count;
-          _cargandoEntradas = false;
+          _entradasHoy = resumen.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
+          _salidasHoy  = resumen.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
+          _cargandoStats = false;
         });
       } else {
-        setState(() => _cargandoEntradas = false);
+        setState(() => _cargandoStats = false);
       }
     } catch (e) {
-      debugPrint('Error cargando entradas hoy: $e');
-      setState(() => _cargandoEntradas = false);
+      debugPrint('Error cargando stats hoy: $e');
+      setState(() => _cargandoStats = false);
     }
   }
 
   void _abrirRegistrarEntrada() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,        // permite que suba con el teclado
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _RegistrarEntradaSheet(),
-    ).then((_) => _cargarEntradasHoy()); // refresca el contador al cerrar
+      builder: (_) => const _MovimientoSheet(tipo: 'ENTRADA'),
+    ).then((_) => _cargarStatsHoy());
+  }
+
+  void _abrirRegistrarSalida() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _MovimientoSheet(tipo: 'SALIDA'),
+    ).then((_) => _cargarStatsHoy());
   }
 
   @override
@@ -220,25 +229,26 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 Expanded(
                   child: _StatCard(
                     label: 'Salidas hoy',
-                    value: '12',
+                    value: _cargandoStats ? '—' : '$_salidasHoy',
                     sublabel: 'Movimientos',
                     icon: Icons.trending_down,
                     iconColor: const Color(0xFFE57373),
                     backgroundColor: const Color(0xFFFFF0F0),
                     valueColor: const Color(0xFF1A1A1A),
+                    isLoading: _cargandoStats,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatCard(
                     label: 'Entradas hoy',
-                    value: _cargandoEntradas ? '—' : '$_entradasHoy',
+                    value: _cargandoStats ? '—' : '$_entradasHoy',
                     sublabel: 'Movimientos',
                     icon: Icons.subdirectory_arrow_left,
                     iconColor: const Color(0xFF4CAF50),
                     backgroundColor: const Color(0xFFEDF7EE),
                     valueColor: const Color(0xFF1A1A1A),
-                    isLoading: _cargandoEntradas,
+                    isLoading: _cargandoStats,
                   ),
                 ),
               ],
@@ -274,7 +284,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                     icon: Icons.arrow_upward_rounded,
                     iconBgColor: const Color(0xFFF8BBD0),
                     iconColor: const Color(0xFFE91E63),
-                    onTap: () {},
+                    onTap: _abrirRegistrarSalida,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -350,17 +360,18 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BOTTOM SHEET — REGISTRAR ENTRADA
+// BOTTOM SHEET — REGISTRAR MOVIMIENTO (ENTRADA / SALIDA)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RegistrarEntradaSheet extends StatefulWidget {
-  const _RegistrarEntradaSheet();
+class _MovimientoSheet extends StatefulWidget {
+  final String tipo; // "ENTRADA" | "SALIDA"
+  const _MovimientoSheet({required this.tipo});
 
   @override
-  State<_RegistrarEntradaSheet> createState() => _RegistrarEntradaSheetState();
+  State<_MovimientoSheet> createState() => _MovimientoSheetState();
 }
 
-class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
+class _MovimientoSheetState extends State<_MovimientoSheet> {
   final _formKey = GlobalKey<FormState>();
   final _cantidadCtrl = TextEditingController();
 
@@ -493,7 +504,7 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
     final nombreFoto = _fotoSeleccionada?.name;
 
     final body = jsonEncode({
-      'tipoMovimiento': 'ENTRADA',
+      'tipoMovimiento': widget.tipo,
       'cantidad': double.parse(_cantidadCtrl.text.trim()),
       'fecha': _fecha.toIso8601String(),
       'usuarioId': 8,                          // TODO: reemplazar con usuario autenticado
@@ -511,7 +522,8 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
       if (res.statusCode == 200 || res.statusCode == 201) {
         if (mounted) {
           Navigator.pop(context);             // cierra el sheet
-          _mostrarSnack('Entrada registrada correctamente ✓');
+          final label = widget.tipo == 'ENTRADA' ? 'Entrada' : 'Salida';
+          _mostrarSnack('$label registrada correctamente ✓');
         }
       } else {
         _mostrarSnack('Error ${res.statusCode}: ${res.body}', isError: true);
@@ -563,29 +575,41 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
               ),
             ),
 
-            // ── Título ──
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 191, 230, 196),
-                    borderRadius: BorderRadius.circular(10),
+            // ── Título dinámico según tipo ──
+            Builder(builder: (_) {
+              final isEntrada = widget.tipo == 'ENTRADA';
+              return Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isEntrada
+                          ? const Color.fromARGB(255, 191, 230, 196)
+                          : const Color(0xFFF8BBD0),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      isEntrada
+                          ? Icons.arrow_downward_rounded
+                          : Icons.arrow_upward_rounded,
+                      color: isEntrada
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFE91E63),
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(Icons.arrow_downward_rounded,
-                      color: Color(0xFF4CAF50), size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Registrar Entrada',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A1A),
+                  const SizedBox(width: 10),
+                  Text(
+                    isEntrada ? 'Registrar Entrada' : 'Registrar Salida',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              );
+            }),
             const SizedBox(height: 20),
 
             // ── Dropdown de material ──
@@ -832,9 +856,9 @@ class _RegistrarEntradaSheetState extends State<_RegistrarEntradaSheet> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        'Registrar entrada',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    : Text(
+                        widget.tipo == 'ENTRADA' ? 'Registrar entrada' : 'Registrar salida',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                       ),
               ),
             ),
