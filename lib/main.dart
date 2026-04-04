@@ -20,9 +20,9 @@ class ApiConfig {
   // │  Emulador Android (AVD)     → http://10.0.2.2:8080/api        │
   // │  Dispositivo físico         → http://192.168.101.6:8080/api   │
   // └─────────────────────────────────────────────────────────────────┘
-  static const String baseUrl = 'http://localhost:8080/api'; // ← WEB (Edge/Chrome)
-  // static const String baseUrl = 'http://10.0.2.2:8080/api';      // ← Emulador Android
-  // static const String baseUrl = 'http://192.168.101.6:8080/api'; // ← Dispositivo físico
+  static const String baseUrl     = 'http://localhost:8080/api'; // ← WEB (Edge/Chrome)
+  // static const String baseUrl  = 'http://10.0.2.2:8080/api';      // ← Emulador Android
+  // static const String baseUrl  = 'http://192.168.101.6:8080/api'; // ← Dispositivo físico
   static const String movimientos = '$baseUrl/movimientos-service/movimientos';
   static const String materiales  = '$baseUrl/materiales-service/materiales';
   static const String facturas    = '$baseUrl/facturas-service/facturas';
@@ -37,14 +37,52 @@ enum MovementType { entrada, salida }
 class _MovimientoResumen {
   final String tipoMovimiento;
   final DateTime fecha;
+  final double cantidad;
+  final int? materialId;
+  final String materialNombre;
+  final String unidadMedida;
 
-  const _MovimientoResumen({required this.tipoMovimiento, required this.fecha});
+  const _MovimientoResumen({
+    required this.tipoMovimiento,
+    required this.fecha,
+    required this.cantidad,
+    this.materialId,
+    this.materialNombre = '',
+    this.unidadMedida = '',
+  });
 
-  factory _MovimientoResumen.fromJson(Map<String, dynamic> json) =>
-      _MovimientoResumen(
-        tipoMovimiento: json['tipoMovimiento'] ?? '',
-        fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
+  factory _MovimientoResumen.fromJson(Map<String, dynamic> json) {
+    // El backend devuelve materialId como campo directo (opción B: cruzamos con /materiales)
+    return _MovimientoResumen(
+      tipoMovimiento: json['tipoMovimiento'] ?? '',
+      fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
+      cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
+      materialId: json['materialId'] as int?,
+    );
+  }
+
+  /// Copia enriquecida con nombre y unidad del material
+  _MovimientoResumen conMaterial(String nombre, String unidad) => _MovimientoResumen(
+        tipoMovimiento: tipoMovimiento,
+        fecha: fecha,
+        cantidad: cantidad,
+        materialId: materialId,
+        materialNombre: nombre,
+        unidadMedida: unidad,
       );
+
+  /// Ej: "10 m | Hace 2h"
+  String get detalle {
+    final cantStr = cantidad % 1 == 0 ? cantidad.toInt().toString() : cantidad.toString();
+    final diff = DateTime.now().difference(fecha);
+    String tiempo;
+    if (diff.inMinutes < 60) tiempo = 'Hace ${diff.inMinutes}min';
+    else if (diff.inHours < 24) tiempo = 'Hace ${diff.inHours}h';
+    else if (diff.inDays == 1) tiempo = 'Ayer';
+    else tiempo = 'Hace ${diff.inDays}d';
+    final unidad = unidadMedida.isNotEmpty ? ' $unidadMedida' : '';
+    return '$cantStr$unidad | $tiempo';
+  }
 }
 
 class MaterialItem {
@@ -97,10 +135,12 @@ class BuildCheckHome extends StatefulWidget {
 class _BuildCheckHomeState extends State<BuildCheckHome> {
   int _selectedIndex = 0;
 
-  // Contadores del día
+  // Contadores y lista del día
   int _entradasHoy = 0;
   int _salidasHoy  = 0;
   bool _cargandoStats = true;
+  List<_MovimientoResumen> _movimientosHoy = [];
+  String? _errorMovimientos;
 
   @override
   void initState() {
@@ -109,39 +149,75 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
   }
 
   Future<void> _cargarStatsHoy() async {
-    setState(() => _cargandoStats = true);
+    setState(() {
+      _cargandoStats = true;
+      _errorMovimientos = null;
+    });
     try {
-      final res = await http.get(Uri.parse(ApiConfig.movimientos));
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(res.body);
-        List lista = [];
+      // Fetch paralelo: movimientos + materiales para cruzar por materialId
+      final responses = await Future.wait([
+        http.get(Uri.parse(ApiConfig.movimientos)),
+        http.get(Uri.parse(ApiConfig.materiales)),
+      ]);
 
-        if (decoded is List) {
-          lista = decoded;
-        } else if (decoded is Map && decoded.containsKey('movimientos')) {
-          lista = decoded['movimientos'];
+      final resMov = responses[0];
+      final resMat = responses[1];
+
+      if (resMov.statusCode == 200) {
+        final decoded = jsonDecode(resMov.body);
+        List rawLista = decoded is List
+            ? decoded
+            : (decoded is Map && decoded.containsKey('movimientos')
+                ? decoded['movimientos']
+                : []);
+
+        // Construir mapa id → MaterialItem para enriquecer cada movimiento
+        final Map<int, MaterialItem> matMap = {};
+        if (resMat.statusCode == 200) {
+          final decMat = jsonDecode(resMat.body);
+          List rawMat = decMat is List
+              ? decMat
+              : (decMat is Map && decMat.containsKey('materiales')
+                  ? decMat['materiales']
+                  : []);
+          for (final e in rawMat) {
+            final m = MaterialItem.fromJson(e as Map<String, dynamic>);
+            matMap[m.id] = m;
+          }
         }
 
         final hoy = DateTime.now();
-        final resumen = lista
+        final hoyLista = rawLista
             .map((e) => _MovimientoResumen.fromJson(e as Map<String, dynamic>))
             .where((m) =>
                 m.fecha.year == hoy.year &&
                 m.fecha.month == hoy.month &&
                 m.fecha.day == hoy.day)
-            .toList();
+            .map((m) {
+              final mat = m.materialId != null ? matMap[m.materialId] : null;
+              return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
+            })
+            .toList()
+          ..sort((a, b) => b.fecha.compareTo(a.fecha));
 
         setState(() {
-          _entradasHoy = resumen.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
-          _salidasHoy  = resumen.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
-          _cargandoStats = false;
+          _entradasHoy    = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
+          _salidasHoy     = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
+          _movimientosHoy = hoyLista;
+          _cargandoStats  = false;
         });
       } else {
-        setState(() => _cargandoStats = false);
+        setState(() {
+          _errorMovimientos = 'Error ${resMov.statusCode}';
+          _cargandoStats = false;
+        });
       }
     } catch (e) {
       debugPrint('Error cargando stats hoy: $e');
-      setState(() => _cargandoStats = false);
+      setState(() {
+        _errorMovimientos = e.toString();
+        _cargandoStats = false;
+      });
     }
   }
 
@@ -181,11 +257,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         elevation: 0,
         title: const Text(
           'Build Check',
-          style: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 20, fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
@@ -268,11 +340,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
             // ── Acciones rápidas ──
             const Text(
               'Acciones rápidas',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
             ),
             const SizedBox(height: 12),
             Row(
@@ -314,29 +382,75 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
             // ── Movimientos recientes ──
             const Text(
               'Movimientos recientes',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
             ),
             const SizedBox(height: 10),
 
-            _MovementItem(
-              name: 'Cemento 50kg',
-              detail: '200 sacos | Hace 2h',
-              type: MovementType.entrada,
-            ),
-            _MovementItem(
-              name: 'Varilla corrugada',
-              detail: '50 Piezas | Hace 5h',
-              type: MovementType.salida,
-            ),
-            _MovementItem(
-              name: 'Cemento 50kg',
-              detail: '15m3 | Ayer',
-              type: MovementType.entrada,
-            ),
+            if (_cargandoStats)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(color: Color(0xFF4CAF50), strokeWidth: 2.5),
+                ),
+              )
+            else if (_errorMovimientos != null)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFCCCCCC)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.cloud_off_rounded, size: 32, color: Color(0xFFBBBBBB)),
+                    const SizedBox(height: 8),
+                    Text(_errorMovimientos!, textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF777777))),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: _cargarStatsHoy,
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Reintentar'),
+                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF4CAF50)),
+                    ),
+                  ],
+                ),
+              )
+            else if (_movimientosHoy.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFCCCCCC)),
+                ),
+                child: const Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_rounded, size: 32, color: Color(0xFFBBBBBB)),
+                      SizedBox(height: 8),
+                      Text('Sin movimientos hoy', style: TextStyle(fontSize: 13, color: Color(0xFF999999))),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _movimientosHoy.length,
+                itemBuilder: (context, index) {
+                  final m = _movimientosHoy[index];
+                  return _MovementItem(
+                    name: m.materialNombre.isNotEmpty ? m.materialNombre : 'Movimiento',
+                    detail: m.detalle,
+                    type: m.tipoMovimiento.toUpperCase() == 'ENTRADA'
+                        ? MovementType.entrada
+                        : MovementType.salida,
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -373,7 +487,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MovimientoSheet extends StatefulWidget {
-  final String tipo; // "ENTRADA" | "SALIDA"
+  final String tipo;
   const _MovimientoSheet({required this.tipo});
 
   @override
@@ -381,7 +495,7 @@ class _MovimientoSheet extends StatefulWidget {
 }
 
 class _MovimientoSheetState extends State<_MovimientoSheet> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey      = GlobalKey<FormState>();
   final _cantidadCtrl = TextEditingController();
 
   List<MaterialItem> _materiales = [];
@@ -389,11 +503,14 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
   bool _loadingMateriales = true;
   String? _errorMateriales;
 
-  XFile? _fotoSeleccionada;
+  XFile?     _fotoSeleccionada;
   Uint8List? _fotoBytes;
 
-  bool _enviando = false;
-  DateTime _fecha = DateTime.now();
+  bool     _enviando = false;
+  DateTime _fecha    = DateTime.now();
+
+  // proyectoId hardcodeado por ahora — TODO: dropdown de proyectos
+  final int _proyectoId = 1;
 
   @override
   void initState() {
@@ -452,17 +569,11 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (picked != null) {
       final bytes = await picked.readAsBytes();
-      setState(() {
-        _fotoSeleccionada = picked;
-        _fotoBytes = bytes;
-      });
+      setState(() { _fotoSeleccionada = picked; _fotoBytes = bytes; });
     }
   }
 
-  void _quitarFoto() => setState(() {
-        _fotoSeleccionada = null;
-        _fotoBytes = null;
-      });
+  void _quitarFoto() => setState(() { _fotoSeleccionada = null; _fotoBytes = null; });
 
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
@@ -487,13 +598,18 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
 
     setState(() => _enviando = true);
 
+    // Fecha como "YYYY-MM-DD" (sin hora) según el backend
+    final fechaStr =
+        '${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}';
+
     final body = jsonEncode({
-      'tipoMovimiento': widget.tipo,
-      'cantidad': double.parse(_cantidadCtrl.text.trim()),
-      'fecha': _fecha.toIso8601String(),
-      'usuarioId': 8,
-      'evidenciaFotografica': _fotoSeleccionada?.name,
-      'materialId': _materialSeleccionado!.id,
+      'tipoMovimiento'     : widget.tipo,
+      'cantidad'           : double.parse(_cantidadCtrl.text.trim()),
+      'fecha'              : fechaStr,
+      'usuarioId'          : 8,                          // TODO: usuario autenticado
+      'evidenciaFotografica': _fotoSeleccionada?.name,   // null si no hay foto
+      'proyectoId'         : _proyectoId,
+      'materialId'         : _materialSeleccionado!.id,
     });
 
     try {
@@ -531,7 +647,6 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -629,7 +744,12 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
               ],
             ),
             const SizedBox(height: 6),
-            _FotoSelector(bytes: _fotoBytes, archivo: _fotoSeleccionada, onSelect: _seleccionarFoto, onRemove: _quitarFoto),
+            _FotoSelector(
+              bytes: _fotoBytes,
+              archivo: _fotoSeleccionada,
+              onSelect: _seleccionarFoto,
+              onRemove: _quitarFoto,
+            ),
 
             const SizedBox(height: 24),
             _BotonEnviar(
@@ -656,23 +776,23 @@ class _FacturaSheet extends StatefulWidget {
 }
 
 class _FacturaSheetState extends State<_FacturaSheet> {
-  // Modo: 'manual' | 'foto'
   String _modo = 'foto';
 
-  final _formKey = GlobalKey<FormState>();
-  final _numeroCtrl      = TextEditingController();
-  final _proveedorCtrl   = TextEditingController();
-  final _observCtrl      = TextEditingController();
-  final _valorCtrl       = TextEditingController();
-  final _proyectoCtrl    = TextEditingController(text: '1'); // TODO: dropdown de proyectos
+  final _formKey       = GlobalKey<FormState>();
+  final _numeroCtrl    = TextEditingController();
+  final _proveedorCtrl = TextEditingController();
+  final _observCtrl    = TextEditingController();
+  final _valorCtrl     = TextEditingController();
+  final _proyectoCtrl  = TextEditingController(text: '1'); // TODO: dropdown de proyectos
 
   DateTime _fecha = DateTime.now();
 
-  // Foto de la factura (opcional en manual, principal en foto)
-  XFile? _fotoSeleccionada;
+  XFile?     _fotoSeleccionada;
   Uint8List? _fotoBytes;
+  bool       _enviando = false;
 
-  bool _enviando = false;
+  // Items de factura — lista de {materialId, cantidad, precioUnitario}
+  final List<Map<String, dynamic>> _items = [];
 
   @override
   void dispose() {
@@ -689,17 +809,11 @@ class _FacturaSheetState extends State<_FacturaSheet> {
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (picked != null) {
       final bytes = await picked.readAsBytes();
-      setState(() {
-        _fotoSeleccionada = picked;
-        _fotoBytes = bytes;
-      });
+      setState(() { _fotoSeleccionada = picked; _fotoBytes = bytes; });
     }
   }
 
-  void _quitarFoto() => setState(() {
-        _fotoSeleccionada = null;
-        _fotoBytes = null;
-      });
+  void _quitarFoto() => setState(() { _fotoSeleccionada = null; _fotoBytes = null; });
 
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
@@ -716,12 +830,10 @@ class _FacturaSheetState extends State<_FacturaSheet> {
   }
 
   Future<void> _enviar() async {
-    // En modo foto solo es obligatoria la foto
     if (_modo == 'foto' && _fotoBytes == null) {
       _mostrarSnack('Adjunta una imagen de la factura', isError: true);
       return;
     }
-    // En modo manual valida el formulario
     if (_modo == 'manual' && !_formKey.currentState!.validate()) return;
 
     setState(() => _enviando = true);
@@ -730,14 +842,16 @@ class _FacturaSheetState extends State<_FacturaSheet> {
         '${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}';
 
     final body = jsonEncode({
-      'numeroFactura'  : _numeroCtrl.text.trim().isEmpty ? null : _numeroCtrl.text.trim(),
-      'fecha'          : fechaStr,
-      'proveedor'      : _proveedorCtrl.text.trim().isEmpty ? null : _proveedorCtrl.text.trim(),
-      'observaciones'  : _observCtrl.text.trim().isEmpty ? null : _observCtrl.text.trim(),
-      'valorTotal'     : _valorCtrl.text.trim().isEmpty ? null : double.tryParse(_valorCtrl.text.trim()),
-      'proyectoId'     : int.tryParse(_proyectoCtrl.text.trim()) ?? 1,
-      // TODO: cuando el backend soporte archivos, subir _fotoBytes con multipart
-      'imagenFactura'  : _fotoSeleccionada?.name,
+      'numeroFactura' : _numeroCtrl.text.trim().isEmpty ? null : _numeroCtrl.text.trim(),
+      'fecha'         : fechaStr,
+      'proveedor'     : _proveedorCtrl.text.trim().isEmpty ? null : _proveedorCtrl.text.trim(),
+      'observaciones' : _observCtrl.text.trim().isEmpty ? null : _observCtrl.text.trim(),
+      'valorTotal'    : _valorCtrl.text.trim().isEmpty ? null : double.tryParse(_valorCtrl.text.trim()),
+      'proyectoId'    : int.tryParse(_proyectoCtrl.text.trim()) ?? 1,
+      // TODO: subir _fotoBytes con multipart cuando el backend lo soporte
+      'imagenFactura' : _fotoSeleccionada?.name,
+      // items: lista de materiales de la factura
+      'items'         : _items,
     });
 
     try {
@@ -774,7 +888,6 @@ class _FacturaSheetState extends State<_FacturaSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -795,42 +908,26 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0E0E0),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(10)),
                     child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF555555), size: 20),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Registrar Factura',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
-                  ),
+                  const Text('Registrar Factura',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // ── Selector de modo ──
+              // ── Toggle modo ──
               Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.all(4),
                 child: Row(
                   children: [
-                    _ModoTab(
-                      label: 'Subir imagen',
-                      icon: Icons.camera_alt_outlined,
-                      selected: _modo == 'foto',
-                      onTap: () => setState(() => _modo = 'foto'),
-                    ),
-                    _ModoTab(
-                      label: 'Manual',
-                      icon: Icons.edit_outlined,
-                      selected: _modo == 'manual',
-                      onTap: () => setState(() => _modo = 'manual'),
-                    ),
+                    _ModoTab(label: 'Subir imagen', icon: Icons.camera_alt_outlined,
+                        selected: _modo == 'foto', onTap: () => setState(() => _modo = 'foto')),
+                    _ModoTab(label: 'Manual', icon: Icons.edit_outlined,
+                        selected: _modo == 'manual', onTap: () => setState(() => _modo = 'manual')),
                   ],
                 ),
               ),
@@ -841,20 +938,15 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 const _FieldLabel('Imagen de la factura'),
                 const SizedBox(height: 6),
                 _FotoSelector(
-                  bytes: _fotoBytes,
-                  archivo: _fotoSeleccionada,
-                  onSelect: _seleccionarFoto,
-                  onRemove: _quitarFoto,
+                  bytes: _fotoBytes, archivo: _fotoSeleccionada,
+                  onSelect: _seleccionarFoto, onRemove: _quitarFoto,
                   placeholder: 'Toca para subir la imagen de la factura',
                   height: 200,
                 ),
                 const SizedBox(height: 14),
-
-                // Campos opcionales en modo foto
                 const _FieldLabel('Número de factura'),
                 const SizedBox(height: 6),
-                _OptionalField(controller: _numeroCtrl, hint: 'Ej: FAC-2026-002'),
-
+                _OptionalField(controller: _numeroCtrl, hint: 'Ej: FAC-2026-001'),
                 const SizedBox(height: 14),
                 const _FieldLabel('Observaciones'),
                 const SizedBox(height: 6),
@@ -867,7 +959,7 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _numeroCtrl,
-                  decoration: _inputDecoration(hint: 'Ej: FAC-2026-002'),
+                  decoration: _inputDecoration(hint: 'Ej: FAC-2026-001'),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
                 ),
 
@@ -886,7 +978,10 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 TextFormField(
                   controller: _valorCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration(hint: 'Ej: 450000', prefix: const Text('\$  ', style: TextStyle(color: Color(0xFF777777)))),
+                  decoration: _inputDecoration(
+                    hint: 'Ej: 50000000',
+                    prefix: const Text(r'$  ', style: TextStyle(color: Color(0xFF777777))),
+                  ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Campo requerido';
                     if (double.tryParse(v.trim()) == null) return 'Número inválido';
@@ -924,10 +1019,8 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 ),
                 const SizedBox(height: 6),
                 _FotoSelector(
-                  bytes: _fotoBytes,
-                  archivo: _fotoSeleccionada,
-                  onSelect: _seleccionarFoto,
-                  onRemove: _quitarFoto,
+                  bytes: _fotoBytes, archivo: _fotoSeleccionada,
+                  onSelect: _seleccionarFoto, onRemove: _quitarFoto,
                 ),
               ],
 
@@ -947,7 +1040,7 @@ class _FacturaSheetState extends State<_FacturaSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WIDGETS REUTILIZABLES INTERNOS
+// WIDGETS REUTILIZABLES
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SheetHandle extends StatelessWidget {
@@ -955,12 +1048,8 @@ class _SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) => Center(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 12),
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: const Color(0xFFDDDDDD),
-            borderRadius: BorderRadius.circular(2),
-          ),
+          width: 40, height: 4,
+          decoration: BoxDecoration(color: const Color(0xFFDDDDDD), borderRadius: BorderRadius.circular(2)),
         ),
       );
 }
@@ -979,43 +1068,37 @@ class _ModoTab extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-
   const _ModoTab({required this.label, required this.icon, required this.selected, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: selected
-                ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))]
-                : [],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: selected ? const Color(0xFF333333) : const Color(0xFF999999)),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
+  Widget build(BuildContext context) => Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: selected
+                  ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))]
+                  : [],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: selected ? const Color(0xFF333333) : const Color(0xFF999999)),
+                const SizedBox(width: 6),
+                Text(label, style: TextStyle(
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color: selected ? const Color(0xFF333333) : const Color(0xFF999999),
-                ),
-              ),
-            ],
+                )),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _DatePicker extends StatelessWidget {
@@ -1069,8 +1152,7 @@ class _FotoSelector extends StatelessWidget {
       return GestureDetector(
         onTap: onSelect,
         child: Container(
-          width: double.infinity,
-          height: height,
+          width: double.infinity, height: height,
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFCCCCCC)),
             borderRadius: BorderRadius.circular(12),
@@ -1087,7 +1169,6 @@ class _FotoSelector extends StatelessWidget {
         ),
       );
     }
-
     return Stack(
       children: [
         ClipRRect(
@@ -1110,7 +1191,8 @@ class _FotoSelector extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
-            child: Text(archivo!.name, style: const TextStyle(color: Colors.white, fontSize: 11), overflow: TextOverflow.ellipsis),
+            child: Text(archivo!.name,
+                style: const TextStyle(color: Colors.white, fontSize: 11), overflow: TextOverflow.ellipsis),
           ),
         ),
       ],
@@ -1159,7 +1241,8 @@ class _BotonEnviar extends StatelessWidget {
             elevation: 0,
           ),
           child: enviando
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+              ? const SizedBox(width: 22, height: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
               : Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
         ),
       );
@@ -1184,7 +1267,8 @@ class _ErrorMateriales extends StatelessWidget {
             const Row(children: [
               Icon(Icons.error_outline, color: Color(0xFFE57373), size: 16),
               SizedBox(width: 6),
-              Text('Error al cargar materiales', style: TextStyle(color: Color(0xFFE57373), fontWeight: FontWeight.w600, fontSize: 13)),
+              Text('Error al cargar materiales',
+                  style: TextStyle(color: Color(0xFFE57373), fontWeight: FontWeight.w600, fontSize: 13)),
             ]),
             const SizedBox(height: 4),
             Text(error, style: const TextStyle(color: Color(0xFF777777), fontSize: 11)),
@@ -1192,7 +1276,10 @@ class _ErrorMateriales extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 14),
               label: const Text('Reintentar', style: TextStyle(fontSize: 12)),
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFFE57373), padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
+              style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFE57373),
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 28)),
             ),
           ],
         ),
@@ -1217,13 +1304,17 @@ class _FieldLabel extends StatelessWidget {
 InputDecoration _inputDecoration({Widget? suffix, Widget? prefix, String? hint}) => InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
-      prefixIcon: prefix != null ? Padding(padding: const EdgeInsets.only(left: 14), child: Align(widthFactor: 1, child: prefix)) : null,
-      suffixIcon: suffix != null ? Padding(padding: const EdgeInsets.only(right: 12), child: Align(widthFactor: 1, child: suffix)) : null,
+      prefixIcon: prefix != null
+          ? Padding(padding: const EdgeInsets.only(left: 14), child: Align(widthFactor: 1, child: prefix))
+          : null,
+      suffixIcon: suffix != null
+          ? Padding(padding: const EdgeInsets.only(right: 12), child: Align(widthFactor: 1, child: suffix))
+          : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE57373))),
+      border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
+      enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
+      focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 1.5)),
+      errorBorder:        OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE57373))),
       focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.5)),
     );
 
@@ -1267,15 +1358,15 @@ class _StatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF777777), fontWeight: FontWeight.w400)),
-              ),
+              Expanded(child: Text(label,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF777777), fontWeight: FontWeight.w400))),
               Icon(icon, size: 20, color: iconColor),
             ],
           ),
           const SizedBox(height: 8),
           if (isLoading)
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4CAF50)))
+            const SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4CAF50)))
           else
             Text(value, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: valueColor, height: 1)),
           const SizedBox(height: 2),
@@ -1323,8 +1414,7 @@ class _QuickActionButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 52, height: 52,
                   decoration: BoxDecoration(color: iconBgColor, shape: BoxShape.circle),
                   child: Icon(icon, color: iconColor, size: 26),
                 ),
@@ -1350,7 +1440,6 @@ class _MovementItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEntrada = type == MovementType.entrada;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
