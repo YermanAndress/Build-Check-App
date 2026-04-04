@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'bottom_nav_shell.dart';
 
 void main() {
   runApp(const BuildCheckApp());
@@ -42,10 +43,13 @@ class _MovimientoResumen {
   final String materialNombre;
   final String unidadMedida;
 
+  final DateTime fechaCreacion;
+
   const _MovimientoResumen({
     required this.tipoMovimiento,
     required this.fecha,
     required this.cantidad,
+    required this.fechaCreacion,
     this.materialId,
     this.materialNombre = '',
     this.unidadMedida = '',
@@ -56,6 +60,8 @@ class _MovimientoResumen {
     return _MovimientoResumen(
       tipoMovimiento: json['tipoMovimiento'] ?? '',
       fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
+      // fechaCreacion tiene hora exacta → sirve para ordenar correctamente
+      fechaCreacion: DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
       materialId: json['materialId'] as int?,
     );
@@ -65,6 +71,7 @@ class _MovimientoResumen {
   _MovimientoResumen conMaterial(String nombre, String unidad) => _MovimientoResumen(
         tipoMovimiento: tipoMovimiento,
         fecha: fecha,
+        fechaCreacion: fechaCreacion,
         cantidad: cantidad,
         materialId: materialId,
         materialNombre: nombre,
@@ -136,9 +143,10 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
   int _selectedIndex = 0;
 
   // Contadores y lista del día
-  int _entradasHoy = 0;
-  int _salidasHoy  = 0;
-  bool _cargandoStats = true;
+  int _entradasHoy     = 0;
+  int _salidasHoy      = 0;
+  int _totalMateriales = 0;
+  bool _cargandoStats  = true;
   List<_MovimientoResumen> _movimientosHoy = [];
   String? _errorMovimientos;
 
@@ -173,6 +181,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
 
         // Construir mapa id → MaterialItem para enriquecer cada movimiento
         final Map<int, MaterialItem> matMap = {};
+        int totalMat = 0;
         if (resMat.statusCode == 200) {
           final decMat = jsonDecode(resMat.body);
           List rawMat = decMat is List
@@ -180,6 +189,7 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
               : (decMat is Map && decMat.containsKey('materiales')
                   ? decMat['materiales']
                   : []);
+          totalMat = rawMat.length;
           for (final e in rawMat) {
             final m = MaterialItem.fromJson(e as Map<String, dynamic>);
             matMap[m.id] = m;
@@ -198,13 +208,14 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
               return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
             })
             .toList()
-          ..sort((a, b) => b.fecha.compareTo(a.fecha));
+          ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion)); // más reciente primero
 
         setState(() {
-          _entradasHoy    = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
-          _salidasHoy     = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
-          _movimientosHoy = hoyLista;
-          _cargandoStats  = false;
+          _entradasHoy     = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
+          _salidasHoy      = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
+          _totalMateriales = totalMat;
+          _movimientosHoy  = hoyLista;
+          _cargandoStats   = false;
         });
       } else {
         setState(() {
@@ -220,6 +231,11 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
       });
     }
   }
+
+  String _labelForIndex(int i) {
+      const labels = ['Inicio', 'Proyectos', 'Inventario', 'Movimientos', 'Reporte'];
+      return '${labels[i]}\n(en construcción)';
+    }
 
   void _abrirRegistrarEntrada() {
     showModalBottomSheet(
@@ -281,13 +297,14 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
               children: [
                 Expanded(
                   child: _StatCard(
-                    label: 'Por recibir hoy',
-                    value: '8',
-                    sublabel: 'Materiales',
+                    label: 'Materiales',
+                    value: _cargandoStats ? '—' : '$_totalMateriales',
+                    sublabel: 'Registrados',
                     icon: Icons.inventory_2_outlined,
                     iconColor: const Color(0xFF888888),
                     backgroundColor: Colors.white,
                     valueColor: const Color(0xFF1A1A1A),
+                    isLoading: _cargandoStats,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -461,7 +478,28 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         ),
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
-          onTap: (i) => setState(() => _selectedIndex = i),
+          onTap: (i) {
+            if (i == 0) {
+              setState(() => _selectedIndex = 0);
+            } else {
+              // Navega al shell de la página correspondiente
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BottomNavShell(
+                    currentIndex: i,
+                    child: Center(
+                      child: Text(
+                        _labelForIndex(i),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, color: Color(0xFF999999)),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF4CAF50),
