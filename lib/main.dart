@@ -27,6 +27,7 @@ class ApiConfig {
   static const String movimientos = '$baseUrl/movimientos-service/movimientos';
   static const String materiales  = '$baseUrl/materiales-service/materiales';
   static const String facturas    = '$baseUrl/facturas-service/facturas';
+  static const String alertas     = '$baseUrl/materiales-service/alertas';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,6 +93,38 @@ class _MovimientoResumen {
   }
 }
 
+// Modelo para alertas de stock bajo
+class AlertaMaterial {
+  final int id;
+  final String nombre;
+  final String mensaje;
+  final int stockActual;
+  final int stockReferencia;
+  final String unidadMedida;
+
+  const AlertaMaterial({
+    required this.id,
+    required this.nombre,
+    required this.mensaje,
+    required this.stockActual,
+    required this.stockReferencia,
+    required this.unidadMedida,
+  });
+
+  factory AlertaMaterial.fromJson(Map<String, dynamic> json) => AlertaMaterial(
+        id: json['id'],
+        nombre: json['nombre'] ?? '',
+        mensaje: json['mensaje'] ?? '',
+        stockActual: (json['stockActual'] as num).toInt(),
+        stockReferencia: (json['stockReferencia'] as num).toInt(),
+        unidadMedida: json['unidadMedida'] ?? '',
+      );
+
+  /// Porcentaje de stock actual sobre referencia
+  double get porcentaje =>
+      stockReferencia > 0 ? (stockActual / stockReferencia * 100).clamp(0, 100) : 0;
+}
+
 class MaterialItem {
   final int id;
   final String nombre;
@@ -150,10 +183,15 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
   List<_MovimientoResumen> _movimientosHoy = [];
   String? _errorMovimientos;
 
+  // Alertas de stock bajo
+  List<AlertaMaterial> _alertas      = [];
+  bool _cargandoAlertas              = true;
+
   @override
   void initState() {
     super.initState();
     _cargarStatsHoy();
+    _cargarAlertas();
   }
 
   Future<void> _cargarStatsHoy() async {
@@ -232,10 +270,41 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
     }
   }
 
-  String _labelForIndex(int i) {
-      const labels = ['Inicio', 'Proyectos', 'Inventario', 'Movimientos', 'Reporte'];
-      return '${labels[i]}\n(en construcción)';
+  Future<void> _cargarAlertas() async {
+    setState(() => _cargandoAlertas = true);
+    try {
+      final res = await http.get(Uri.parse(ApiConfig.alertas));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        List raw = decoded is List
+            ? decoded
+            : (decoded is Map && decoded.containsKey('alertas') ? decoded['alertas'] : [decoded]);
+        setState(() {
+          _alertas = raw.map((e) => AlertaMaterial.fromJson(e as Map<String, dynamic>)).toList();
+          _cargandoAlertas = false;
+        });
+      } else {
+        setState(() => _cargandoAlertas = false);
+      }
+    } catch (e) {
+      debugPrint('Error cargando alertas: $e');
+      setState(() => _cargandoAlertas = false);
     }
+  }
+
+  void _abrirStockBajo() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StockBajoSheet(alertas: _alertas, cargando: _cargandoAlertas),
+    );
+  }
+
+  String _labelForIndex(int i) {
+    const labels = ['Inicio', 'Proyectos', 'Inventario', 'Movimientos', 'Reporte'];
+    return '${labels[i]}\n(en construcción)';
+  }
 
   void _abrirRegistrarEntrada() {
     showModalBottomSheet(
@@ -252,7 +321,10 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _MovimientoSheet(tipo: 'SALIDA'),
-    ).then((_) => _cargarStatsHoy());
+    ).then((_) {
+      _cargarStatsHoy();
+      _cargarAlertas(); // refrescar stock bajo tras una salida
+    });
   }
 
   void _abrirEscanearFactura() {
@@ -311,12 +383,14 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 Expanded(
                   child: _StatCard(
                     label: 'Stock bajo',
-                    value: '3',
+                    value: _cargandoAlertas ? '—' : '${_alertas.length}',
                     sublabel: 'Alertas activas',
                     icon: Icons.warning_amber_rounded,
                     iconColor: const Color(0xFFE57373),
                     backgroundColor: const Color(0xFFFFF0F0),
                     valueColor: const Color(0xFF1A1A1A),
+                    isLoading: _cargandoAlertas,
+                    onTap: _abrirStockBajo,
                   ),
                 ),
               ],
@@ -632,6 +706,32 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
     if (_materialSeleccionado == null) {
       _mostrarSnack('Selecciona un material', isError: true);
       return;
+    }
+
+    // Validar stock suficiente antes de registrar una salida
+    if (widget.tipo == 'SALIDA') {
+      final cantidadSolicitada = double.parse(_cantidadCtrl.text.trim());
+      // Buscar el stock actual del material desde la API
+      try {
+        final res = await http.get(Uri.parse('${ApiConfig.materiales}/${_materialSeleccionado!.id}'));
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          final matData = decoded is Map && decoded.containsKey('material')
+              ? decoded['material']
+              : decoded;
+          final stockActual = (matData['stockActual'] as num?)?.toDouble() ?? 0;
+          if (cantidadSolicitada > stockActual) {
+            _mostrarSnack(
+              'Stock insuficiente: Stock actual = ${stockActual % 1 == 0 ? stockActual.toInt() : stockActual} ${_materialSeleccionado!.unidadMedida}',
+              isError: true,
+            );
+            return;
+          }
+        }
+      } catch (e) {
+        // Si falla la consulta de stock, dejar pasar y que el backend decida
+        debugPrint('No se pudo verificar stock: $e');
+      }
     }
 
     setState(() => _enviando = true);
@@ -1370,6 +1470,7 @@ class _StatCard extends StatelessWidget {
     required this.backgroundColor,
     required this.valueColor,
     this.isLoading = false,
+    this.onTap,
   });
 
   final String label;
@@ -1380,13 +1481,20 @@ class _StatCard extends StatelessWidget {
   final Color backgroundColor;
   final Color valueColor;
   final bool isLoading;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
       ),
@@ -1410,6 +1518,8 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(sublabel, style: const TextStyle(fontSize: 12, color: Color(0xFF999999))),
         ],
+      ),
+    ),
       ),
     );
   }
@@ -1514,6 +1624,173 @@ class _MovementItem extends StatelessWidget {
               isEntrada ? 'ENTRADA' : 'SALIDA',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                   color: isEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE57373)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOTTOM SHEET — STOCK BAJO
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StockBajoSheet extends StatelessWidget {
+  final List<AlertaMaterial> alertas;
+  final bool cargando;
+
+  const _StockBajoSheet({required this.alertas, required this.cargando});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Handle ──
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDDDDDD),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // ── Título ──
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF888888), size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Stock bajo',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+              ),
+              const SizedBox(width: 8),
+              if (!cargando)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${alertas.length} materiales',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF777777)),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Contenido ──
+          if (cargando)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50), strokeWidth: 2.5)),
+            )
+          else if (alertas.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 40, color: Color(0xFF4CAF50)),
+                    SizedBox(height: 8),
+                    Text('Todo el stock está en orden', style: TextStyle(fontSize: 13, color: Color(0xFF777777))),
+                  ],
+                ),
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: alertas.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final a = alertas[index];
+                  return _AlertaItem(alerta: a);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertaItem extends StatelessWidget {
+  final AlertaMaterial alerta;
+  const _AlertaItem({required this.alerta});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
+      ),
+      child: Row(
+        children: [
+          // Ícono de material
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.inventory_2_outlined, size: 20, color: Color(0xFF888888)),
+          ),
+          const SizedBox(width: 12),
+          // Nombre y stock
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alerta.nombre,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Stock: ${alerta.stockActual} ${alerta.unidadMedida}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                ),
+              ],
+            ),
+          ),
+          // Badge con el mensaje
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              alerta.mensaje,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF777777)),
             ),
           ),
         ],
