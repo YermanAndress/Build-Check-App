@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'ui/features/dashboard/screen/dashboard_page.dart';
+
+import 'ui/main_screen.dart';
 
 void main() {
   // Asegura que los bindings de Flutter se inicialicen antes de cualquier plugin
@@ -31,7 +32,7 @@ class BuildCheckApp extends StatelessWidget {
         ),
       ),
 
-      home: const DashboardPage(),
+      home: const MainScreen(),
     );
   }
 }

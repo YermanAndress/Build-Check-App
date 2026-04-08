@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../bottom_nav_shell.dart';
-
 import '../../../shared/sheet/factura_sheet.dart';
 import '../../../shared/sheet/movimiento_sheet.dart';
 import '../../../shared/sheet/stock_bajo_sheet.dart';
@@ -27,7 +25,6 @@ class _DashboardPageState extends State<DashboardPage> {
   int _entradasHoy = 0;
   int _salidasHoy = 0;
   int _totalMateriales = 0;
-  int _selectedIndex = 0;
   bool _cargandoStats = true;
   List<MovimientoResumen> _movimientosHoy = [];
   String? _errorMovimientos;
@@ -85,17 +82,6 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (_) =>
           StockBajoSheet(alertas: alertas, cargando: cargandoAlertas),
     );
-  }
-
-  String _labelForIndex(int i) {
-    const labels = [
-      'Inicio',
-      'Proyectos',
-      'Inventario',
-      'Movimientos',
-      'Reporte',
-    ];
-    return '${labels[i]}\n(en construcción)';
   }
 
   void _abrirRegistrarEntrada() {
@@ -385,76 +371,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   );
                 },
               ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (i) {
-            if (i == 0) {
-              setState(() => _selectedIndex = 0);
-            } else {
-              // Navega al shell de la página correspondiente
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BottomNavShell(
-                    currentIndex: i,
-                    child: Center(
-                      child: Text(
-                        _labelForIndex(i),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Color(0xFF999999),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF4CAF50),
-          unselectedItemColor: const Color(0xFF9E9E9E),
-          selectedLabelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.folder_outlined),
-              activeIcon: Icon(Icons.folder),
-              label: 'Proyectos',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_outlined),
-              activeIcon: Icon(Icons.inventory),
-              label: 'Inventario',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.swap_vert),
-              label: 'Movimientos',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_outlined),
-              activeIcon: Icon(Icons.bar_chart),
-              label: 'Reporte',
-            ),
           ],
         ),
       ),
