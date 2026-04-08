@@ -1,0 +1,199 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import '../../../core/api_config.dart';
+import '../widgets/form_utils.dart'; // Importante usar tus utilidades
+
+class FacturaSheet extends StatefulWidget {
+  const FacturaSheet({super.key});
+
+  @override
+  State<FacturaSheet> createState() => _FacturaSheetState();
+}
+
+class _FacturaSheetState extends State<FacturaSheet> {
+  String _modo = 'foto';
+
+  final _formKey = GlobalKey<FormState>();
+  final _numeroCtrl = TextEditingController();
+  final _proveedorCtrl = TextEditingController();
+  final _valorCtrl = TextEditingController();
+  final _proyectoCtrl = TextEditingController(text: '1');
+
+  final DateTime _fecha = DateTime.now();
+  XFile? _fotoSeleccionada;
+  Uint8List? _fotoBytes;
+  bool _enviando = false;
+
+  @override
+  void dispose() {
+    for (var controller in [
+      _numeroCtrl,
+      _proveedorCtrl,
+      _valorCtrl,
+      _proyectoCtrl,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  // --- LÓGICA ---
+
+  Future<void> _seleccionarFoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _fotoSeleccionada = picked;
+        _fotoBytes = bytes;
+      });
+    }
+  }
+
+  void _quitarFoto() => setState(() {
+    _fotoSeleccionada = null;
+    _fotoBytes = null;
+  });
+
+  Future<void> _enviar() async {
+    if (_modo == 'foto' && _fotoBytes == null) {
+      _mostrarSnack('Adjunta una imagen de la factura', isError: true);
+      return;
+    }
+    if (_modo == 'manual' && !_formKey.currentState!.validate()) return;
+
+    setState(() => _enviando = true);
+
+    // Formateo de fecha simple
+    final fechaStr =
+        "${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}";
+
+    final body = jsonEncode({
+      'numeroFactura': _numeroCtrl.text.isEmpty ? null : _numeroCtrl.text,
+      'fecha': fechaStr,
+      'proveedor': _proveedorCtrl.text.isEmpty ? null : _proveedorCtrl.text,
+      'valorTotal': double.tryParse(_valorCtrl.text),
+      'proyectoId': int.tryParse(_proyectoCtrl.text) ?? 1,
+    });
+
+    try {
+      final res = await http.post(
+        Uri.parse(ApiConfig.facturas),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      if ((res.statusCode == 200 || res.statusCode == 201) && mounted) {
+        Navigator.pop(context, true);
+        _mostrarSnack('Factura registrada correctamente ✓');
+      }
+    } catch (e) {
+      _mostrarSnack('Error de conexión', isError: true);
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  void _mostrarSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+  // --- DISEÑO ---
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SheetHandle(),
+              const Text(
+                'Registrar Factura',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+
+              // Selector de Modo tipo "Módulo"
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    ModoTab(
+                      label: 'Escanear',
+                      icon: Icons.camera_alt_outlined,
+                      selected: _modo == 'foto',
+                      onTap: () => setState(() => _modo = 'foto'),
+                    ),
+                    ModoTab(
+                      label: 'Manual',
+                      icon: Icons.edit_note_outlined,
+                      selected: _modo == 'manual',
+                      onTap: () => setState(() => _modo = 'manual'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              if (_modo == 'foto') ...[
+                const FieldLabel('Imagen de la factura'),
+                FotoSelector(
+                  bytes: _fotoBytes,
+                  archivo: _fotoSeleccionada,
+                  onSelect: _seleccionarFoto,
+                  onRemove: _quitarFoto,
+                ),
+              ] else ...[
+                const FieldLabel('Datos de factura'),
+                OptionalField(
+                  controller: _numeroCtrl,
+                  hint: 'Número de Factura',
+                ),
+                const SizedBox(height: 12),
+                OptionalField(controller: _proveedorCtrl, hint: 'Proveedor'),
+                const SizedBox(height: 12),
+                OptionalField(controller: _valorCtrl, hint: 'Valor Total'),
+              ],
+
+              const SizedBox(height: 32),
+
+              BotonEnviar(
+                enviando: _enviando,
+                label: 'REGISTRAR FACTURA',
+                color: Colors.blueGrey, // Color diferenciador
+                onTap: _enviar,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
