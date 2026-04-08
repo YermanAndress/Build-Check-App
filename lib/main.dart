@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/loginPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -23,11 +24,12 @@ class ApiConfig {
   // └─────────────────────────────────────────────────────────────────┘
   // static const String baseUrl     = 'http://localhost:8080/api'; // ← WEB (Edge/Chrome)
   // static const String baseUrl  = 'http://10.0.2.2:8080/api';      // ← Emulador Android
-  static const String baseUrl = 'http://192.168.101.5:8080/api'; // ← Dispositivo físico
+  static const String baseUrl =
+      'http://192.168.101.5:8080/api'; // ← Dispositivo físico
   static const String movimientos = '$baseUrl/movimientos-service/movimientos';
-  static const String materiales  = '$baseUrl/materiales-service/materiales';
-  static const String facturas    = '$baseUrl/facturas-service/facturas';
-  static const String alertas     = '$baseUrl/materiales-service/alertas';
+  static const String materiales = '$baseUrl/materiales-service/materiales';
+  static const String facturas = '$baseUrl/facturas-service/facturas';
+  static const String alertas = '$baseUrl/materiales-service/alertas';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,14 +64,16 @@ class _MovimientoResumen {
       tipoMovimiento: json['tipoMovimiento'] ?? '',
       fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
       // fechaCreacion tiene hora exacta → sirve para ordenar correctamente
-      fechaCreacion: DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
+      fechaCreacion:
+          DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
       materialId: json['materialId'] as int?,
     );
   }
 
   /// Copia enriquecida con nombre y unidad del material
-  _MovimientoResumen conMaterial(String nombre, String unidad) => _MovimientoResumen(
+  _MovimientoResumen conMaterial(String nombre, String unidad) =>
+      _MovimientoResumen(
         tipoMovimiento: tipoMovimiento,
         fecha: fecha,
         fechaCreacion: fechaCreacion,
@@ -81,13 +85,19 @@ class _MovimientoResumen {
 
   /// Ej: "10 m | Hace 2h"
   String get detalle {
-    final cantStr = cantidad % 1 == 0 ? cantidad.toInt().toString() : cantidad.toString();
+    final cantStr = cantidad % 1 == 0
+        ? cantidad.toInt().toString()
+        : cantidad.toString();
     final diff = DateTime.now().difference(fecha);
     String tiempo;
-    if (diff.inMinutes < 60) tiempo = 'Hace ${diff.inMinutes}min';
-    else if (diff.inHours < 24) tiempo = 'Hace ${diff.inHours}h';
-    else if (diff.inDays == 1) tiempo = 'Ayer';
-    else tiempo = 'Hace ${diff.inDays}d';
+    if (diff.inMinutes < 60)
+      tiempo = 'Hace ${diff.inMinutes}min';
+    else if (diff.inHours < 24)
+      tiempo = 'Hace ${diff.inHours}h';
+    else if (diff.inDays == 1)
+      tiempo = 'Ayer';
+    else
+      tiempo = 'Hace ${diff.inDays}d';
     final unidad = unidadMedida.isNotEmpty ? ' $unidadMedida' : '';
     return '$cantStr$unidad | $tiempo';
   }
@@ -112,17 +122,18 @@ class AlertaMaterial {
   });
 
   factory AlertaMaterial.fromJson(Map<String, dynamic> json) => AlertaMaterial(
-        id: json['id'],
-        nombre: json['nombre'] ?? '',
-        mensaje: json['mensaje'] ?? '',
-        stockActual: (json['stockActual'] as num).toInt(),
-        stockReferencia: (json['stockReferencia'] as num).toInt(),
-        unidadMedida: json['unidadMedida'] ?? '',
-      );
+    id: json['id'],
+    nombre: json['nombre'] ?? '',
+    mensaje: json['mensaje'] ?? '',
+    stockActual: (json['stockActual'] as num).toInt(),
+    stockReferencia: (json['stockReferencia'] as num).toInt(),
+    unidadMedida: json['unidadMedida'] ?? '',
+  );
 
   /// Porcentaje de stock actual sobre referencia
-  double get porcentaje =>
-      stockReferencia > 0 ? (stockActual / stockReferencia * 100).clamp(0, 100) : 0;
+  double get porcentaje => stockReferencia > 0
+      ? (stockActual / stockReferencia * 100).clamp(0, 100)
+      : 0;
 }
 
 class MaterialItem {
@@ -137,10 +148,10 @@ class MaterialItem {
   });
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
-        id: json['id'],
-        nombre: json['nombre'],
-        unidadMedida: json['unidadMedida'] ?? '',
-      );
+    id: json['id'],
+    nombre: json['nombre'],
+    unidadMedida: json['unidadMedida'] ?? '',
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,7 +171,7 @@ class BuildCheckApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4CAF50)),
       ),
-      home: const BuildCheckHome(),
+      home: const Loginpage(),
     );
   }
 }
@@ -176,16 +187,16 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
   int _selectedIndex = 0;
 
   // Contadores y lista del día
-  int _entradasHoy     = 0;
-  int _salidasHoy      = 0;
+  int _entradasHoy = 0;
+  int _salidasHoy = 0;
   int _totalMateriales = 0;
-  bool _cargandoStats  = true;
+  bool _cargandoStats = true;
   List<_MovimientoResumen> _movimientosHoy = [];
   String? _errorMovimientos;
 
   // Alertas de stock bajo
-  List<AlertaMaterial> _alertas      = [];
-  bool _cargandoAlertas              = true;
+  List<AlertaMaterial> _alertas = [];
+  bool _cargandoAlertas = true;
 
   @override
   void initState() {
@@ -214,8 +225,8 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         List rawLista = decoded is List
             ? decoded
             : (decoded is Map && decoded.containsKey('movimientos')
-                ? decoded['movimientos']
-                : []);
+                  ? decoded['movimientos']
+                  : []);
 
         // Construir mapa id → MaterialItem para enriquecer cada movimiento
         final Map<int, MaterialItem> matMap = {};
@@ -225,8 +236,8 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
           List rawMat = decMat is List
               ? decMat
               : (decMat is Map && decMat.containsKey('materiales')
-                  ? decMat['materiales']
-                  : []);
+                    ? decMat['materiales']
+                    : []);
           totalMat = rawMat.length;
           for (final e in rawMat) {
             final m = MaterialItem.fromJson(e as Map<String, dynamic>);
@@ -235,25 +246,40 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         }
 
         final hoy = DateTime.now();
-        final hoyLista = rawLista
-            .map((e) => _MovimientoResumen.fromJson(e as Map<String, dynamic>))
-            .where((m) =>
-                m.fecha.year == hoy.year &&
-                m.fecha.month == hoy.month &&
-                m.fecha.day == hoy.day)
-            .map((m) {
-              final mat = m.materialId != null ? matMap[m.materialId] : null;
-              return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
-            })
-            .toList()
-          ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion)); // más reciente primero
+        final hoyLista =
+            rawLista
+                .map(
+                  (e) => _MovimientoResumen.fromJson(e as Map<String, dynamic>),
+                )
+                .where(
+                  (m) =>
+                      m.fecha.year == hoy.year &&
+                      m.fecha.month == hoy.month &&
+                      m.fecha.day == hoy.day,
+                )
+                .map((m) {
+                  final mat = m.materialId != null
+                      ? matMap[m.materialId]
+                      : null;
+                  return mat != null
+                      ? m.conMaterial(mat.nombre, mat.unidadMedida)
+                      : m;
+                })
+                .toList()
+              ..sort(
+                (a, b) => b.fechaCreacion.compareTo(a.fechaCreacion),
+              ); // más reciente primero
 
         setState(() {
-          _entradasHoy     = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA').length;
-          _salidasHoy      = hoyLista.where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA').length;
+          _entradasHoy = hoyLista
+              .where((m) => m.tipoMovimiento.toUpperCase() == 'ENTRADA')
+              .length;
+          _salidasHoy = hoyLista
+              .where((m) => m.tipoMovimiento.toUpperCase() == 'SALIDA')
+              .length;
           _totalMateriales = totalMat;
-          _movimientosHoy  = hoyLista;
-          _cargandoStats   = false;
+          _movimientosHoy = hoyLista;
+          _cargandoStats = false;
         });
       } else {
         setState(() {
@@ -278,9 +304,13 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         final decoded = jsonDecode(res.body);
         List raw = decoded is List
             ? decoded
-            : (decoded is Map && decoded.containsKey('alertas') ? decoded['alertas'] : [decoded]);
+            : (decoded is Map && decoded.containsKey('alertas')
+                  ? decoded['alertas']
+                  : [decoded]);
         setState(() {
-          _alertas = raw.map((e) => AlertaMaterial.fromJson(e as Map<String, dynamic>)).toList();
+          _alertas = raw
+              .map((e) => AlertaMaterial.fromJson(e as Map<String, dynamic>))
+              .toList();
           _cargandoAlertas = false;
         });
       } else {
@@ -297,12 +327,19 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _StockBajoSheet(alertas: _alertas, cargando: _cargandoAlertas),
+      builder: (_) =>
+          _StockBajoSheet(alertas: _alertas, cargando: _cargandoAlertas),
     );
   }
 
   String _labelForIndex(int i) {
-    const labels = ['Inicio', 'Proyectos', 'Inventario', 'Movimientos', 'Reporte'];
+    const labels = [
+      'Inicio',
+      'Proyectos',
+      'Inventario',
+      'Movimientos',
+      'Reporte',
+    ];
     return '${labels[i]}\n(en construcción)';
   }
 
@@ -345,15 +382,25 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
         elevation: 0,
         title: const Text(
           'Build Check',
-          style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF555555)),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFF555555),
+            ),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.account_circle_outlined, color: Color(0xFF555555)),
+            icon: const Icon(
+              Icons.account_circle_outlined,
+              color: Color(0xFF555555),
+            ),
             onPressed: () {},
           ),
           const SizedBox(width: 4),
@@ -431,7 +478,11 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
             // ── Acciones rápidas ──
             const Text(
               'Acciones rápidas',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -473,7 +524,11 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
             // ── Movimientos recientes ──
             const Text(
               'Movimientos recientes',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -481,12 +536,18 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(color: Color(0xFF4CAF50), strokeWidth: 2.5),
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF4CAF50),
+                    strokeWidth: 2.5,
+                  ),
                 ),
               )
             else if (_errorMovimientos != null)
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -494,16 +555,28 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.cloud_off_rounded, size: 32, color: Color(0xFFBBBBBB)),
+                    const Icon(
+                      Icons.cloud_off_rounded,
+                      size: 32,
+                      color: Color(0xFFBBBBBB),
+                    ),
                     const SizedBox(height: 8),
-                    Text(_errorMovimientos!, textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF777777))),
+                    Text(
+                      _errorMovimientos!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF777777),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     TextButton.icon(
                       onPressed: _cargarStatsHoy,
                       icon: const Icon(Icons.refresh_rounded, size: 16),
                       label: const Text('Reintentar'),
-                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF4CAF50)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF4CAF50),
+                      ),
                     ),
                   ],
                 ),
@@ -519,9 +592,19 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 child: const Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inbox_rounded, size: 32, color: Color(0xFFBBBBBB)),
+                      Icon(
+                        Icons.inbox_rounded,
+                        size: 32,
+                        color: Color(0xFFBBBBBB),
+                      ),
                       SizedBox(height: 8),
-                      Text('Sin movimientos hoy', style: TextStyle(fontSize: 13, color: Color(0xFF999999))),
+                      Text(
+                        'Sin movimientos hoy',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF999999),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -534,7 +617,9 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                 itemBuilder: (context, index) {
                   final m = _movimientosHoy[index];
                   return _MovementItem(
-                    name: m.materialNombre.isNotEmpty ? m.materialNombre : 'Movimiento',
+                    name: m.materialNombre.isNotEmpty
+                        ? m.materialNombre
+                        : 'Movimiento',
                     detail: m.detalle,
                     type: m.tipoMovimiento.toUpperCase() == 'ENTRADA'
                         ? MovementType.entrada
@@ -566,7 +651,10 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
                       child: Text(
                         _labelForIndex(i),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 18, color: Color(0xFF999999)),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Color(0xFF999999),
+                        ),
                       ),
                     ),
                   ),
@@ -578,15 +666,37 @@ class _BuildCheckHomeState extends State<BuildCheckHome> {
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF4CAF50),
           unselectedItemColor: const Color(0xFF9E9E9E),
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           elevation: 0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.folder_outlined), activeIcon: Icon(Icons.folder), label: 'Proyectos'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_outlined), activeIcon: Icon(Icons.inventory), label: 'Inventario'),
-            BottomNavigationBarItem(icon: Icon(Icons.swap_vert), label: 'Movimientos'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reporte'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.folder_outlined),
+              activeIcon: Icon(Icons.folder),
+              label: 'Proyectos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_outlined),
+              activeIcon: Icon(Icons.inventory),
+              label: 'Inventario',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_vert),
+              label: 'Movimientos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Reporte',
+            ),
           ],
         ),
       ),
@@ -607,7 +717,7 @@ class _MovimientoSheet extends StatefulWidget {
 }
 
 class _MovimientoSheetState extends State<_MovimientoSheet> {
-  final _formKey      = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _cantidadCtrl = TextEditingController();
 
   List<MaterialItem> _materiales = [];
@@ -615,11 +725,11 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
   bool _loadingMateriales = true;
   String? _errorMateriales;
 
-  XFile?     _fotoSeleccionada;
+  XFile? _fotoSeleccionada;
   Uint8List? _fotoBytes;
 
-  bool     _enviando = false;
-  DateTime _fecha    = DateTime.now();
+  bool _enviando = false;
+  DateTime _fecha = DateTime.now();
 
   // proyectoId hardcodeado por ahora — TODO: dropdown de proyectos
   final int _proyectoId = 1;
@@ -647,13 +757,25 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
         List<MaterialItem> lista = [];
 
         if (decoded is List) {
-          lista = decoded.map<MaterialItem>((e) => MaterialItem.fromJson(e as Map<String, dynamic>)).toList();
+          lista = decoded
+              .map<MaterialItem>(
+                (e) => MaterialItem.fromJson(e as Map<String, dynamic>),
+              )
+              .toList();
         } else if (decoded is Map) {
           if (decoded.containsKey('materiales')) {
             final List arr = decoded['materiales'];
-            lista = arr.map<MaterialItem>((e) => MaterialItem.fromJson(e as Map<String, dynamic>)).toList();
+            lista = arr
+                .map<MaterialItem>(
+                  (e) => MaterialItem.fromJson(e as Map<String, dynamic>),
+                )
+                .toList();
           } else if (decoded.containsKey('material')) {
-            lista = [MaterialItem.fromJson(decoded['material'] as Map<String, dynamic>)];
+            lista = [
+              MaterialItem.fromJson(
+                decoded['material'] as Map<String, dynamic>,
+              ),
+            ];
           }
         }
 
@@ -678,14 +800,23 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
 
   Future<void> _seleccionarFoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
-      setState(() { _fotoSeleccionada = picked; _fotoBytes = bytes; });
+      setState(() {
+        _fotoSeleccionada = picked;
+        _fotoBytes = bytes;
+      });
     }
   }
 
-  void _quitarFoto() => setState(() { _fotoSeleccionada = null; _fotoBytes = null; });
+  void _quitarFoto() => setState(() {
+    _fotoSeleccionada = null;
+    _fotoBytes = null;
+  });
 
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
@@ -694,7 +825,9 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(colorScheme: const ColorScheme.light(primary: Color(0xFF4CAF50))),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFF4CAF50)),
+        ),
         child: child!,
       ),
     );
@@ -713,7 +846,9 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
       final cantidadSolicitada = double.parse(_cantidadCtrl.text.trim());
       // Buscar el stock actual del material desde la API
       try {
-        final res = await http.get(Uri.parse('${ApiConfig.materiales}/${_materialSeleccionado!.id}'));
+        final res = await http.get(
+          Uri.parse('${ApiConfig.materiales}/${_materialSeleccionado!.id}'),
+        );
         if (res.statusCode == 200) {
           final decoded = jsonDecode(res.body);
           final matData = decoded is Map && decoded.containsKey('material')
@@ -741,13 +876,13 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
         '${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}';
 
     final body = jsonEncode({
-      'tipoMovimiento'     : widget.tipo,
-      'cantidad'           : double.parse(_cantidadCtrl.text.trim()),
-      'fecha'              : fechaStr,
-      'usuarioId'          : 8,                          // TODO: usuario autenticado
-      'evidenciaFotografica': _fotoSeleccionada?.name,   // null si no hay foto
-      'proyectoId'         : _proyectoId,
-      'materialId'         : _materialSeleccionado!.id,
+      'tipoMovimiento': widget.tipo,
+      'cantidad': double.parse(_cantidadCtrl.text.trim()),
+      'fecha': fechaStr,
+      'usuarioId': 8, // TODO: usuario autenticado
+      'evidenciaFotografica': _fotoSeleccionada?.name, // null si no hay foto
+      'proyectoId': _proyectoId,
+      'materialId': _materialSeleccionado!.id,
     });
 
     try {
@@ -774,12 +909,16 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
   }
 
   void _mostrarSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? const Color(0xFFE57373) : const Color(0xFF4CAF50),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError
+            ? const Color(0xFFE57373)
+            : const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -798,53 +937,80 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _SheetHandle(),
-            Builder(builder: (_) {
-              final isEntrada = widget.tipo == 'ENTRADA';
-              return Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isEntrada ? const Color.fromARGB(255, 191, 230, 196) : const Color(0xFFF8BBD0),
-                      borderRadius: BorderRadius.circular(10),
+            Builder(
+              builder: (_) {
+                final isEntrada = widget.tipo == 'ENTRADA';
+                return Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isEntrada
+                            ? const Color.fromARGB(255, 191, 230, 196)
+                            : const Color(0xFFF8BBD0),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isEntrada
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        color: isEntrada
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFFE91E63),
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(
-                      isEntrada ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                      color: isEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE91E63),
-                      size: 20,
+                    const SizedBox(width: 10),
+                    Text(
+                      isEntrada ? 'Registrar Entrada' : 'Registrar Salida',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    isEntrada ? 'Registrar Entrada' : 'Registrar Salida',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
-                  ),
-                ],
-              );
-            }),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 20),
 
             const _FieldLabel('Material'),
             const SizedBox(height: 6),
             if (_loadingMateriales)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                child: CircularProgressIndicator(color: Color(0xFF4CAF50), strokeWidth: 2),
-              ))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF4CAF50),
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
             else if (_errorMateriales != null)
               _ErrorMateriales(
                 error: _errorMateriales!,
                 onRetry: () {
-                  setState(() { _loadingMateriales = true; _errorMateriales = null; });
+                  setState(() {
+                    _loadingMateriales = true;
+                    _errorMateriales = null;
+                  });
                   _cargarMateriales();
                 },
               )
             else
               DropdownButtonFormField<MaterialItem>(
                 value: _materialSeleccionado,
-                hint: const Text('Selecciona un material', style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
+                hint: const Text(
+                  'Selecciona un material',
+                  style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+                ),
                 decoration: _inputDecoration(),
-                items: _materiales.map((m) => DropdownMenuItem(value: m, child: Text(m.nombre))).toList(),
+                items: _materiales
+                    .map(
+                      (m) => DropdownMenuItem(value: m, child: Text(m.nombre)),
+                    )
+                    .toList(),
                 onChanged: (v) => setState(() => _materialSeleccionado = v),
                 validator: (v) => v == null ? 'Selecciona un material' : null,
               ),
@@ -854,10 +1020,18 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
             const SizedBox(height: 6),
             TextFormField(
               controller: _cantidadCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: _inputDecoration(
                 suffix: _materialSeleccionado != null
-                    ? Text(_materialSeleccionado!.unidadMedida, style: const TextStyle(color: Color(0xFF777777), fontSize: 13))
+                    ? Text(
+                        _materialSeleccionado!.unidadMedida,
+                        style: const TextStyle(
+                          color: Color(0xFF777777),
+                          fontSize: 13,
+                        ),
+                      )
                     : null,
               ),
               validator: (v) {
@@ -892,7 +1066,9 @@ class _MovimientoSheetState extends State<_MovimientoSheet> {
             const SizedBox(height: 24),
             _BotonEnviar(
               enviando: _enviando,
-              label: widget.tipo == 'ENTRADA' ? 'Registrar entrada' : 'Registrar salida',
+              label: widget.tipo == 'ENTRADA'
+                  ? 'Registrar entrada'
+                  : 'Registrar salida',
               onTap: _enviar,
             ),
           ],
@@ -916,18 +1092,20 @@ class _FacturaSheet extends StatefulWidget {
 class _FacturaSheetState extends State<_FacturaSheet> {
   String _modo = 'foto';
 
-  final _formKey       = GlobalKey<FormState>();
-  final _numeroCtrl    = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _numeroCtrl = TextEditingController();
   final _proveedorCtrl = TextEditingController();
-  final _observCtrl    = TextEditingController();
-  final _valorCtrl     = TextEditingController();
-  final _proyectoCtrl  = TextEditingController(text: '1'); // TODO: dropdown de proyectos
+  final _observCtrl = TextEditingController();
+  final _valorCtrl = TextEditingController();
+  final _proyectoCtrl = TextEditingController(
+    text: '1',
+  ); // TODO: dropdown de proyectos
 
   DateTime _fecha = DateTime.now();
 
-  XFile?     _fotoSeleccionada;
+  XFile? _fotoSeleccionada;
   Uint8List? _fotoBytes;
-  bool       _enviando = false;
+  bool _enviando = false;
 
   // Items de factura — lista de {materialId, cantidad, precioUnitario}
   final List<Map<String, dynamic>> _items = [];
@@ -944,14 +1122,23 @@ class _FacturaSheetState extends State<_FacturaSheet> {
 
   Future<void> _seleccionarFoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
-      setState(() { _fotoSeleccionada = picked; _fotoBytes = bytes; });
+      setState(() {
+        _fotoSeleccionada = picked;
+        _fotoBytes = bytes;
+      });
     }
   }
 
-  void _quitarFoto() => setState(() { _fotoSeleccionada = null; _fotoBytes = null; });
+  void _quitarFoto() => setState(() {
+    _fotoSeleccionada = null;
+    _fotoBytes = null;
+  });
 
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
@@ -960,7 +1147,9 @@ class _FacturaSheetState extends State<_FacturaSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(colorScheme: const ColorScheme.light(primary: Color(0xFF757575))),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFF757575)),
+        ),
         child: child!,
       ),
     );
@@ -980,16 +1169,24 @@ class _FacturaSheetState extends State<_FacturaSheet> {
         '${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}';
 
     final body = jsonEncode({
-      'numeroFactura' : _numeroCtrl.text.trim().isEmpty ? null : _numeroCtrl.text.trim(),
-      'fecha'         : fechaStr,
-      'proveedor'     : _proveedorCtrl.text.trim().isEmpty ? null : _proveedorCtrl.text.trim(),
-      'observaciones' : _observCtrl.text.trim().isEmpty ? null : _observCtrl.text.trim(),
-      'valorTotal'    : _valorCtrl.text.trim().isEmpty ? null : double.tryParse(_valorCtrl.text.trim()),
-      'proyectoId'    : int.tryParse(_proyectoCtrl.text.trim()) ?? 1,
+      'numeroFactura': _numeroCtrl.text.trim().isEmpty
+          ? null
+          : _numeroCtrl.text.trim(),
+      'fecha': fechaStr,
+      'proveedor': _proveedorCtrl.text.trim().isEmpty
+          ? null
+          : _proveedorCtrl.text.trim(),
+      'observaciones': _observCtrl.text.trim().isEmpty
+          ? null
+          : _observCtrl.text.trim(),
+      'valorTotal': _valorCtrl.text.trim().isEmpty
+          ? null
+          : double.tryParse(_valorCtrl.text.trim()),
+      'proyectoId': int.tryParse(_proyectoCtrl.text.trim()) ?? 1,
       // TODO: subir _fotoBytes con multipart cuando el backend lo soporte
-      'imagenFactura' : _fotoSeleccionada?.name,
+      'imagenFactura': _fotoSeleccionada?.name,
       // items: lista de materiales de la factura
-      'items'         : _items,
+      'items': _items,
     });
 
     try {
@@ -1015,12 +1212,16 @@ class _FacturaSheetState extends State<_FacturaSheet> {
   }
 
   void _mostrarSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? const Color(0xFFE57373) : const Color(0xFF4CAF50),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError
+            ? const Color(0xFFE57373)
+            : const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -1046,26 +1247,50 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF555555), size: 20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0E0E0),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_outlined,
+                      color: Color(0xFF555555),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 10),
-                  const Text('Registrar Factura',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                  const Text(
+                    'Registrar Factura',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
 
               // ── Toggle modo ──
               Container(
-                decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.all(4),
                 child: Row(
                   children: [
-                    _ModoTab(label: 'Subir imagen', icon: Icons.camera_alt_outlined,
-                        selected: _modo == 'foto', onTap: () => setState(() => _modo = 'foto')),
-                    _ModoTab(label: 'Manual', icon: Icons.edit_outlined,
-                        selected: _modo == 'manual', onTap: () => setState(() => _modo = 'manual')),
+                    _ModoTab(
+                      label: 'Subir imagen',
+                      icon: Icons.camera_alt_outlined,
+                      selected: _modo == 'foto',
+                      onTap: () => setState(() => _modo = 'foto'),
+                    ),
+                    _ModoTab(
+                      label: 'Manual',
+                      icon: Icons.edit_outlined,
+                      selected: _modo == 'manual',
+                      onTap: () => setState(() => _modo = 'manual'),
+                    ),
                   ],
                 ),
               ),
@@ -1076,19 +1301,28 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 const _FieldLabel('Imagen de la factura'),
                 const SizedBox(height: 6),
                 _FotoSelector(
-                  bytes: _fotoBytes, archivo: _fotoSeleccionada,
-                  onSelect: _seleccionarFoto, onRemove: _quitarFoto,
+                  bytes: _fotoBytes,
+                  archivo: _fotoSeleccionada,
+                  onSelect: _seleccionarFoto,
+                  onRemove: _quitarFoto,
                   placeholder: 'Toca para subir la imagen de la factura',
                   height: 200,
                 ),
                 const SizedBox(height: 14),
                 const _FieldLabel('Número de factura'),
                 const SizedBox(height: 6),
-                _OptionalField(controller: _numeroCtrl, hint: 'Ej: FAC-2026-001'),
+                _OptionalField(
+                  controller: _numeroCtrl,
+                  hint: 'Ej: FAC-2026-001',
+                ),
                 const SizedBox(height: 14),
                 const _FieldLabel('Observaciones'),
                 const SizedBox(height: 6),
-                _OptionalField(controller: _observCtrl, hint: 'Notas adicionales', maxLines: 2),
+                _OptionalField(
+                  controller: _observCtrl,
+                  hint: 'Notas adicionales',
+                  maxLines: 2,
+                ),
               ],
 
               // ── MODO MANUAL ──
@@ -1098,7 +1332,9 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 TextFormField(
                   controller: _numeroCtrl,
                   decoration: _inputDecoration(hint: 'Ej: FAC-2026-001'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Campo requerido'
+                      : null,
                 ),
 
                 const SizedBox(height: 14),
@@ -1107,7 +1343,9 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 TextFormField(
                   controller: _proveedorCtrl,
                   decoration: _inputDecoration(hint: 'Nombre del proveedor'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Campo requerido'
+                      : null,
                 ),
 
                 const SizedBox(height: 14),
@@ -1115,14 +1353,20 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _valorCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: _inputDecoration(
                     hint: 'Ej: 50000000',
-                    prefix: const Text(r'$  ', style: TextStyle(color: Color(0xFF777777))),
+                    prefix: const Text(
+                      r'$  ',
+                      style: TextStyle(color: Color(0xFF777777)),
+                    ),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Campo requerido';
-                    if (double.tryParse(v.trim()) == null) return 'Número inválido';
+                    if (double.tryParse(v.trim()) == null)
+                      return 'Número inválido';
                     return null;
                   },
                 ),
@@ -1139,13 +1383,19 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                   controller: _proyectoCtrl,
                   keyboardType: TextInputType.number,
                   decoration: _inputDecoration(hint: '1'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Campo requerido'
+                      : null,
                 ),
 
                 const SizedBox(height: 14),
                 const _FieldLabel('Observaciones'),
                 const SizedBox(height: 6),
-                _OptionalField(controller: _observCtrl, hint: 'Notas adicionales (opcional)', maxLines: 2),
+                _OptionalField(
+                  controller: _observCtrl,
+                  hint: 'Notas adicionales (opcional)',
+                  maxLines: 2,
+                ),
 
                 const SizedBox(height: 14),
                 Row(
@@ -1157,8 +1407,10 @@ class _FacturaSheetState extends State<_FacturaSheet> {
                 ),
                 const SizedBox(height: 6),
                 _FotoSelector(
-                  bytes: _fotoBytes, archivo: _fotoSeleccionada,
-                  onSelect: _seleccionarFoto, onRemove: _quitarFoto,
+                  bytes: _fotoBytes,
+                  archivo: _fotoSeleccionada,
+                  onSelect: _seleccionarFoto,
+                  onRemove: _quitarFoto,
                 ),
               ],
 
@@ -1184,21 +1436,31 @@ class _FacturaSheetState extends State<_FacturaSheet> {
 class _SheetHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          width: 40, height: 4,
-          decoration: BoxDecoration(color: const Color(0xFFDDDDDD), borderRadius: BorderRadius.circular(2)),
-        ),
-      );
+    child: Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: const Color(0xFFDDDDDD),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
 }
 
 class _BadgeOpcional extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(color: const Color(0xFFEEEEEE), borderRadius: BorderRadius.circular(4)),
-        child: const Text('Opcional', style: TextStyle(fontSize: 10, color: Color(0xFF888888))),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEEEEEE),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: const Text(
+      'Opcional',
+      style: TextStyle(fontSize: 10, color: Color(0xFF888888)),
+    ),
+  );
 }
 
 class _ModoTab extends StatelessWidget {
@@ -1206,37 +1468,59 @@ class _ModoTab extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-  const _ModoTab({required this.label, required this.icon, required this.selected, required this.onTap});
+  const _ModoTab({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: selected ? Colors.white : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: selected
-                  ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))]
-                  : [],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: selected ? const Color(0xFF333333) : const Color(0xFF999999)),
-                const SizedBox(width: 6),
-                Text(label, style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? const Color(0xFF333333) : const Color(0xFF999999),
-                )),
-              ],
-            ),
-          ),
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
-      );
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected
+                  ? const Color(0xFF333333)
+                  : const Color(0xFF999999),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected
+                    ? const Color(0xFF333333)
+                    : const Color(0xFF999999),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _DatePicker extends StatelessWidget {
@@ -1246,25 +1530,29 @@ class _DatePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFCCCCCC)),
-            borderRadius: BorderRadius.circular(12),
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFCCCCCC)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.calendar_today_outlined,
+            size: 18,
+            color: Color(0xFF777777),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF777777)),
-              const SizedBox(width: 10),
-              Text(
-                '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
-              ),
-            ],
+          const SizedBox(width: 10),
+          Text(
+            '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}',
+            style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }
 
 class _FotoSelector extends StatelessWidget {
@@ -1290,7 +1578,8 @@ class _FotoSelector extends StatelessWidget {
       return GestureDetector(
         onTap: onSelect,
         child: Container(
-          width: double.infinity, height: height,
+          width: double.infinity,
+          height: height,
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFCCCCCC)),
             borderRadius: BorderRadius.circular(12),
@@ -1299,9 +1588,16 @@ class _FotoSelector extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_photo_alternate_outlined, size: 32, color: Color(0xFFBBBBBB)),
+              const Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 32,
+                color: Color(0xFFBBBBBB),
+              ),
               const SizedBox(height: 6),
-              Text(placeholder, style: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA))),
+              Text(
+                placeholder,
+                style: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
+              ),
             ],
           ),
         ),
@@ -1311,26 +1607,42 @@ class _FotoSelector extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.memory(bytes!, width: double.infinity, height: height, fit: BoxFit.cover),
+          child: Image.memory(
+            bytes!,
+            width: double.infinity,
+            height: height,
+            fit: BoxFit.cover,
+          ),
         ),
         Positioned(
-          top: 8, right: 8,
+          top: 8,
+          right: 8,
           child: GestureDetector(
             onTap: onRemove,
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.close, color: Colors.white, size: 18),
             ),
           ),
         ),
         Positioned(
-          bottom: 8, left: 8,
+          bottom: 8,
+          left: 8,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
-            child: Text(archivo!.name,
-                style: const TextStyle(color: Colors.white, fontSize: 11), overflow: TextOverflow.ellipsis),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              archivo!.name,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ],
@@ -1342,14 +1654,18 @@ class _OptionalField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final int maxLines;
-  const _OptionalField({required this.controller, required this.hint, this.maxLines = 1});
+  const _OptionalField({
+    required this.controller,
+    required this.hint,
+    this.maxLines = 1,
+  });
 
   @override
   Widget build(BuildContext context) => TextFormField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: _inputDecoration(hint: hint),
-      );
+    controller: controller,
+    maxLines: maxLines,
+    decoration: _inputDecoration(hint: hint),
+  );
 }
 
 class _BotonEnviar extends StatelessWidget {
@@ -1367,23 +1683,32 @@ class _BotonEnviar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          onPressed: enviando ? null : onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: const Color(0xFFBDBDBD),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-          ),
-          child: enviando
-              ? const SizedBox(width: 22, height: 22,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-              : Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-        ),
-      );
+    width: double.infinity,
+    height: 50,
+    child: ElevatedButton(
+      onPressed: enviando ? null : onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: const Color(0xFFBDBDBD),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 0,
+      ),
+      child: enviando
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
+              ),
+            )
+          : Text(
+              label,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+    ),
+  );
 }
 
 class _ErrorMateriales extends StatelessWidget {
@@ -1393,35 +1718,47 @@ class _ErrorMateriales extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF0F0),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE57373)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF0F0),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFE57373)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
           children: [
-            const Row(children: [
-              Icon(Icons.error_outline, color: Color(0xFFE57373), size: 16),
-              SizedBox(width: 6),
-              Text('Error al cargar materiales',
-                  style: TextStyle(color: Color(0xFFE57373), fontWeight: FontWeight.w600, fontSize: 13)),
-            ]),
-            const SizedBox(height: 4),
-            Text(error, style: const TextStyle(color: Color(0xFF777777), fontSize: 11)),
-            TextButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 14),
-              label: const Text('Reintentar', style: TextStyle(fontSize: 12)),
-              style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFE57373),
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 28)),
+            Icon(Icons.error_outline, color: Color(0xFFE57373), size: 16),
+            SizedBox(width: 6),
+            Text(
+              'Error al cargar materiales',
+              style: TextStyle(
+                color: Color(0xFFE57373),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
-      );
+        const SizedBox(height: 4),
+        Text(
+          error,
+          style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+        ),
+        TextButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh, size: 14),
+          label: const Text('Reintentar', style: TextStyle(fontSize: 12)),
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFFE57373),
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 28),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1434,27 +1771,56 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF444444)),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF444444),
+    ),
+  );
 }
 
-InputDecoration _inputDecoration({Widget? suffix, Widget? prefix, String? hint}) => InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
-      prefixIcon: prefix != null
-          ? Padding(padding: const EdgeInsets.only(left: 14), child: Align(widthFactor: 1, child: prefix))
-          : null,
-      suffixIcon: suffix != null
-          ? Padding(padding: const EdgeInsets.only(right: 12), child: Align(widthFactor: 1, child: suffix))
-          : null,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
-      enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCCCCCC))),
-      focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 1.5)),
-      errorBorder:        OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE57373))),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.5)),
-    );
+InputDecoration _inputDecoration({
+  Widget? suffix,
+  Widget? prefix,
+  String? hint,
+}) => InputDecoration(
+  hintText: hint,
+  hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+  prefixIcon: prefix != null
+      ? Padding(
+          padding: const EdgeInsets.only(left: 14),
+          child: Align(widthFactor: 1, child: prefix),
+        )
+      : null,
+  suffixIcon: suffix != null
+      ? Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Align(widthFactor: 1, child: suffix),
+        )
+      : null,
+  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(color: Color(0xFFCCCCCC)),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(color: Color(0xFFCCCCCC)),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 1.5),
+  ),
+  errorBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(color: Color(0xFFE57373)),
+  ),
+  focusedErrorBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: const BorderSide(color: Color(0xFFE57373), width: 1.5),
+  ),
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WIDGETS DE PANTALLA PRINCIPAL
@@ -1492,34 +1858,59 @@ class _StatCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: Text(label,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF777777), fontWeight: FontWeight.w400))),
-              Icon(icon, size: 20, color: iconColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF777777),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  Icon(icon, size: 20, color: iconColor),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF4CAF50),
+                  ),
+                )
+              else
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: valueColor,
+                    height: 1,
+                  ),
+                ),
+              const SizedBox(height: 2),
+              Text(
+                sublabel,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          if (isLoading)
-            const SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4CAF50)))
-          else
-            Text(value, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: valueColor, height: 1)),
-          const SizedBox(height: 2),
-          Text(sublabel, style: const TextStyle(fontSize: 12, color: Color(0xFF999999))),
-        ],
-      ),
-    ),
+        ),
       ),
     );
   }
@@ -1562,13 +1953,25 @@ class _QuickActionButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(color: iconBgColor, shape: BoxShape.circle),
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    shape: BoxShape.circle,
+                  ),
                   child: Icon(icon, color: iconColor, size: 26),
                 ),
                 const SizedBox(height: 10),
-                Text(label, textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF444444), fontWeight: FontWeight.w500, height: 1.3)),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF444444),
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1579,7 +1982,11 @@ class _QuickActionButton extends StatelessWidget {
 }
 
 class _MovementItem extends StatelessWidget {
-  const _MovementItem({required this.name, required this.detail, required this.type});
+  const _MovementItem({
+    required this.name,
+    required this.detail,
+    required this.type,
+  });
 
   final String name;
   final String detail;
@@ -1599,8 +2006,12 @@ class _MovementItem extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isEntrada ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-            color: isEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE57373),
+            isEntrada
+                ? Icons.arrow_upward_rounded
+                : Icons.arrow_downward_rounded,
+            color: isEntrada
+                ? const Color(0xFF4CAF50)
+                : const Color(0xFFE57373),
             size: 22,
           ),
           const SizedBox(width: 12),
@@ -1608,22 +2019,42 @@ class _MovementItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(detail, style: const TextStyle(fontSize: 12, color: Color(0xFF999999))),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF999999),
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isEntrada ? const Color(0xFFEDF7EE) : const Color(0xFFFFF0F0),
+              color: isEntrada
+                  ? const Color(0xFFEDF7EE)
+                  : const Color(0xFFFFF0F0),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               isEntrada ? 'ENTRADA' : 'SALIDA',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                  color: isEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE57373)),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isEntrada
+                    ? const Color(0xFF4CAF50)
+                    : const Color(0xFFE57373),
+              ),
             ),
           ),
         ],
@@ -1658,7 +2089,8 @@ class _StockBajoSheet extends StatelessWidget {
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: const Color(0xFFDDDDDD),
                 borderRadius: BorderRadius.circular(2),
@@ -1675,24 +2107,39 @@ class _StockBajoSheet extends StatelessWidget {
                   color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF888888), size: 20),
+                child: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: Color(0xFF888888),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
               const Text(
                 'Stock bajo',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
               const SizedBox(width: 8),
               if (!cargando)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${alertas.length} materiales',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF777777)),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF777777),
+                    ),
                   ),
                 ),
             ],
@@ -1703,7 +2150,12 @@ class _StockBajoSheet extends StatelessWidget {
           if (cargando)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50), strokeWidth: 2.5)),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF4CAF50),
+                  strokeWidth: 2.5,
+                ),
+              ),
             )
           else if (alertas.isEmpty)
             const Padding(
@@ -1711,9 +2163,16 @@ class _StockBajoSheet extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.check_circle_outline, size: 40, color: Color(0xFF4CAF50)),
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 40,
+                      color: Color(0xFF4CAF50),
+                    ),
                     SizedBox(height: 8),
-                    Text('Todo el stock está en orden', style: TextStyle(fontSize: 13, color: Color(0xFF777777))),
+                    Text(
+                      'Todo el stock está en orden',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF777777)),
+                    ),
                   ],
                 ),
               ),
@@ -1756,12 +2215,17 @@ class _AlertaItem extends StatelessWidget {
         children: [
           // Ícono de material
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.inventory_2_outlined, size: 20, color: Color(0xFF888888)),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 20,
+              color: Color(0xFF888888),
+            ),
           ),
           const SizedBox(width: 12),
           // Nombre y stock
@@ -1771,12 +2235,19 @@ class _AlertaItem extends StatelessWidget {
               children: [
                 Text(
                   alerta.nombre,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Stock: ${alerta.stockActual} ${alerta.unidadMedida}',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF999999),
+                  ),
                 ),
               ],
             ),
@@ -1790,7 +2261,11 @@ class _AlertaItem extends StatelessWidget {
             ),
             child: Text(
               alerta.mensaje,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF777777)),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF777777),
+              ),
             ),
           ),
         ],
