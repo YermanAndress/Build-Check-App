@@ -378,7 +378,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     name: m.materialNombre.isNotEmpty
                         ? m.materialNombre
                         : 'Movimiento',
-                    detail: m.detalle,
+                    detail: m.descripcionFormateada,
                     type: m.tipoMovimiento.toLowerCase() == 'entrada'
                         ? MovementType.entrada
                         : MovementType.salida,

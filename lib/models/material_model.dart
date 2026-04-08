@@ -24,9 +24,9 @@ class AlertaMaterial {
     unidadMedida: json['unidadMedida'] ?? '',
   );
 
-  double get porcentaje => stockReferencia > 0
-      ? (stockActual / stockReferencia * 100).clamp(0, 100)
-      : 0;
+  double get porcentaje => (stockReferencia > 0)
+      ? (stockActual / stockReferencia).clamp(0.0, 1.0)
+      : 0.0;
 }
 
 class MaterialItem {

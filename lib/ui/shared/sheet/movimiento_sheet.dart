@@ -113,13 +113,19 @@ class MovimientoSheetState extends State<MovimientoSheet> {
         headers: {'Content-Type': 'application/json'},
         body: body,
       );
-      if ((res.statusCode == 200 || res.statusCode == 201) && mounted) {
+      if (!mounted) return;
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
         Navigator.pop(context, true);
+      } else {
+        _mostrarSnack('Error del servidor: ${res.statusCode}', isError: true);
       }
     } catch (e) {
-      _mostrarSnack('Error de red', isError: true);
+      if (mounted) _mostrarSnack('Error de red', isError: true);
     } finally {
-      if (mounted) setState(() => _enviando = false);
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
     }
   }
 
