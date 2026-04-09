@@ -32,17 +32,22 @@ class AlertaMaterial {
 class MaterialItem {
   final int id;
   final String nombre;
+  final int? stockActual;
   final String unidadMedida;
 
   const MaterialItem({
     required this.id,
     required this.nombre,
+    required this.stockActual,
     required this.unidadMedida,
   });
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
     id: json['id'],
     nombre: json['nombre'],
+    stockActual: json['stockActual'] != null
+        ? (json['stockActual'] as num).toInt()
+        : null,
     unidadMedida: json['unidadMedida'] ?? '',
   );
 }
