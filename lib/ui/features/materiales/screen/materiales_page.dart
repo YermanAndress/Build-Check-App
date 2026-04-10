@@ -5,14 +5,14 @@ import '../../../../services/material_service.dart';
 
 import '../widget/material_card.dart';
 
-class CatalogoScreen extends StatefulWidget {
-  const CatalogoScreen({super.key});
+class MaterialesPage extends StatefulWidget {
+  const MaterialesPage({super.key});
 
   @override
-  State<CatalogoScreen> createState() => _CatalogoScreenState();
+  State<MaterialesPage> createState() => _MaterialesPageState();
 }
 
-class _CatalogoScreenState extends State<CatalogoScreen> {
+class _MaterialesPageState extends State<MaterialesPage> {
   final MaterialService _service = MaterialService();
   List<MaterialItem> _todosLosMateriales = [];
   List<MaterialItem> _filtrados = [];
