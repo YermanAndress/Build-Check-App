@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'features/dashboard/screen/dashboard_page.dart';
 import 'features/proyectos/screen/proyectos_page.dart';
-import 'features/materiales/screen/materiales_page.dart';
+import 'features/facturas/screen/facturas_page.dart';
 import 'features/movimientos/screen/movimientos_page.dart';
 import 'features/reporte/screen/reporte_page.dart';
 
@@ -16,11 +16,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // Aquí listas todas tus páginas principales
   final List<Widget> _paginas = [
-    const DashboardPage(), // Tu Home actual
-    const ProyectosPage(), // Placeholder o página real
-    const CatalogoScreen(), // ¡Aquí va tu nuevo catálogo!
+    const DashboardPage(),
+    const FacturasPage(),
+    const ProyectosPage(),
     const MovimientosPage(),
     const ReportePage(),
   ];
@@ -28,7 +27,6 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // El IndexedStack mantiene el estado de las páginas vivo (no se recargan al cambiar)
       body: IndexedStack(index: _selectedIndex, children: _paginas),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
