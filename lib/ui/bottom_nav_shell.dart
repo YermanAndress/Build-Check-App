@@ -76,15 +76,37 @@ class BottomNavShell extends StatelessWidget {
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF4CAF50),
           unselectedItemColor: const Color(0xFF9E9E9E),
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           elevation: 0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.folder_outlined), activeIcon: Icon(Icons.folder), label: 'Proyectos'),
-            BottomNavigationBarItem(icon: Icon(Icons.inventory_outlined), activeIcon: Icon(Icons.inventory), label: 'Inventario'),
-            BottomNavigationBarItem(icon: Icon(Icons.swap_vert), label: 'Movimientos'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reporte'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.folder_outlined),
+              activeIcon: Icon(Icons.folder),
+              label: 'Proyectos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_outlined),
+              activeIcon: Icon(Icons.inventory),
+              label: 'Inventario',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_vert),
+              label: 'Movimientos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Reporte',
+            ),
           ],
         ),
       ),
@@ -93,10 +115,33 @@ class BottomNavShell extends StatelessWidget {
 }
 
 // Proxies para evitar importaciones circulares — cada uno importa su página
-class _ProyectosProxy  extends StatelessWidget { const _ProyectosProxy();  @override Widget build(BuildContext context) => const _PlaceholderPage(label: 'Proyectos', index: 1); }
-class _InventarioProxy extends StatelessWidget { const _InventarioProxy(); @override Widget build(BuildContext context) => const _PlaceholderPage(label: 'Inventario', index: 2); }
-class _MovimientosProxy extends StatelessWidget { const _MovimientosProxy(); @override Widget build(BuildContext context) => const _PlaceholderPage(label: 'Movimientos', index: 3); }
-class _ReporteProxy    extends StatelessWidget { const _ReporteProxy();    @override Widget build(BuildContext context) => const _PlaceholderPage(label: 'Reporte', index: 4); }
+class _ProyectosProxy extends StatelessWidget {
+  const _ProyectosProxy();
+  @override
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(label: 'Proyectos', index: 1);
+}
+
+class _InventarioProxy extends StatelessWidget {
+  const _InventarioProxy();
+  @override
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(label: 'Inventario', index: 2);
+}
+
+class _MovimientosProxy extends StatelessWidget {
+  const _MovimientosProxy();
+  @override
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(label: 'Movimientos', index: 3);
+}
+
+class _ReporteProxy extends StatelessWidget {
+  const _ReporteProxy();
+  @override
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(label: 'Reporte', index: 4);
+}
 
 class _PlaceholderPage extends StatelessWidget {
   final String label;
