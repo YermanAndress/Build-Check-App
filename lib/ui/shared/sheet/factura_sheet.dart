@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import '../../../core/api_config.dart';
-import '../widgets/form_utils.dart'; // Importante usar tus utilidades
+
+import '../widgets/form_utils.dart';
+import '../../../models/factura_model.dart';
+import '../../../services/factura_service.dart';
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -15,12 +15,12 @@ class FacturaSheet extends StatefulWidget {
 
 class _FacturaSheetState extends State<FacturaSheet> {
   String _modo = 'foto';
-
   final _formKey = GlobalKey<FormState>();
-  final _numeroCtrl = TextEditingController();
-  final _proveedorCtrl = TextEditingController();
-  final _valorCtrl = TextEditingController();
-  final _proyectoCtrl = TextEditingController(text: '1');
+
+  final TextEditingController _numeroCtrl = TextEditingController();
+  final TextEditingController _proveedorCtrl = TextEditingController();
+  final TextEditingController _valorCtrl = TextEditingController();
+  final TextEditingController _proyectoCtrl = TextEditingController(text: '1');
 
   final DateTime _fecha = DateTime.now();
   XFile? _fotoSeleccionada;
@@ -29,18 +29,12 @@ class _FacturaSheetState extends State<FacturaSheet> {
 
   @override
   void dispose() {
-    for (var controller in [
-      _numeroCtrl,
-      _proveedorCtrl,
-      _valorCtrl,
-      _proyectoCtrl,
-    ]) {
-      controller.dispose();
-    }
+    _numeroCtrl.dispose();
+    _proveedorCtrl.dispose();
+    _valorCtrl.dispose();
+    _proyectoCtrl.dispose();
     super.dispose();
   }
-
-  // --- LÓGICA ---
 
   Future<void> _seleccionarFoto() async {
     final picker = ImagePicker();
@@ -64,38 +58,39 @@ class _FacturaSheetState extends State<FacturaSheet> {
 
   Future<void> _enviar() async {
     if (_modo == 'foto' && _fotoBytes == null) {
-      _mostrarSnack('Adjunta una imagen de la factura', isError: true);
+      _mostrarSnack('Adjunta una imagen', isError: true);
       return;
     }
-    if (_modo == 'manual' && !_formKey.currentState!.validate()) return;
 
     setState(() => _enviando = true);
 
-    // Formateo de fecha simple
-    final fechaStr =
-        "${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}";
-
-    final body = jsonEncode({
-      'numeroFactura': _numeroCtrl.text.isEmpty ? null : _numeroCtrl.text,
-      'fecha': fechaStr,
-      'proveedor': _proveedorCtrl.text.isEmpty ? null : _proveedorCtrl.text,
-      'valorTotal': double.tryParse(_valorCtrl.text),
-      'proyectoId': int.tryParse(_proyectoCtrl.text) ?? 1,
-    });
+    final service = FacturaService();
+    bool exito = false;
 
     try {
-      final res = await http.post(
-        Uri.parse(ApiConfig.facturas),
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
+      if (_modo == 'foto') {
+        exito = await service.registrarFacturaConFoto(
+          bytes: _fotoBytes!,
+          fecha: _fecha,
+          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+        );
+      } else {
+        final factura = Factura(
+          numeroFactura: _numeroCtrl.text,
+          fecha: _fecha,
+          proveedor: _proveedorCtrl.text,
+          valorTotal: double.tryParse(_valorCtrl.text),
+          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+        );
+        exito = await service.registrarFacturaManual(factura);
+      }
 
-      if ((res.statusCode == 200 || res.statusCode == 201) && mounted) {
+      if (exito && mounted) {
         Navigator.pop(context, true);
-        _mostrarSnack('Factura registrada correctamente ✓');
+        _mostrarSnack('¡Factura guardada!');
       }
     } catch (e) {
-      _mostrarSnack('Error de conexión', isError: true);
+      _mostrarSnack('Error al procesar');
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -136,7 +131,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
               ),
               const SizedBox(height: 20),
 
-              // Selector de Modo tipo "Módulo"
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -187,7 +181,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
               BotonEnviar(
                 enviando: _enviando,
                 label: 'REGISTRAR FACTURA',
-                color: Colors.blueGrey, // Color diferenciador
+                color: Colors.blueGrey,
                 onTap: _enviar,
               ),
             ],
