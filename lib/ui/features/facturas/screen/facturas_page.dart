@@ -5,16 +5,16 @@ import '../../../../services/factura_service.dart';
 
 import '../widget/factura_card.dart';
 
-class FacturaPage extends StatefulWidget {
-  const FacturaPage({super.key});
+class FacturasPage extends StatefulWidget {
+  const FacturasPage({super.key});
 
   @override
-  State<FacturaPage> createState() => _FacturasScreenState();
+  State<FacturasPage> createState() => _FacturasScreenState();
 }
 
-class _FacturasScreenState extends State<FacturaPage> {
+class _FacturasScreenState extends State<FacturasPage> {
   final FacturaService _service = FacturaService();
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
