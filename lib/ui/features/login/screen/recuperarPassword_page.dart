@@ -16,10 +16,7 @@ class _RecuperarpasswordPageState extends State<RecuperarpasswordPage> {
   void enviarCorreo() async {
     setState(() => loading = true);
     try {
-      await LoginService().recuperarPassword(
-        emailController.text.trim(),
-        "nuevaContraseña123", // En un caso real, generarías una contraseña temporal o enviarías un enlace
-      );
+      await LoginService().recuperarPassword(emailController.text.trim());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Correo de recuperación enviado")),
       );

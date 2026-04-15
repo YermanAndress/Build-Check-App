@@ -178,7 +178,7 @@ class RoleSelector extends StatelessWidget {
     final roles = [
       "ROLE_ADMIN",
       "ROLE_ALMACENISTA",
-      "ROLE_DIRECTOR OBRA",
+      "ROLE_DIRECTOR_OBRA",
       "ROLE_RESIDENTE",
     ];
 

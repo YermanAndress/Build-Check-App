@@ -42,34 +42,13 @@ class LoginService {
     }
   }
 
-  Future<void> recuperarPassword(String correo, String nuevaPassword) async {
+  Future<void> recuperarPassword(String correo) async {
     final urlBuscar = Uri.parse(
-      "${ApiConfig.usuarios}/usuarios/buscar?correo=$correo",
+      "${ApiConfig.usuarios}/usuarios/recuperar?correo=$correo",
     );
-    final responseBuscar = await http.get(urlBuscar);
+    final responseBuscar = await http.post(urlBuscar);
     if (responseBuscar.statusCode != 200) {
-      throw Exception('Usuario no encontrado');
-    }
-    final usuario = jsonDecode(responseBuscar.body);
-    final id = usuario['id'];
-
-    final urlActualizar = Uri.parse("${ApiConfig.usuarios}/usuarios/$id");
-    final responseActualizar = await http.put(
-      urlActualizar,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "id": id,
-        "nombre": usuario['nombre'],
-        "correo": usuario['correo'],
-        'password': nuevaPassword,
-        "rol": usuario['rol'],
-        "activo": usuario['activo'],
-      }),
-    );
-    if (responseActualizar.statusCode != 200) {
-      throw Exception(
-        'Error al actualizar contraseña: ${responseActualizar.statusCode}',
-      );
+      throw Exception('Error al enviar correo de recuperación');
     }
   }
 }
