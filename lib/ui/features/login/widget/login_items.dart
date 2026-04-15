@@ -45,7 +45,7 @@ class LoginTitle extends StatelessWidget {
   }
 }
 
-class LoginInput extends StatelessWidget {
+class LoginInput extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final bool obscure;
@@ -58,13 +58,25 @@ class LoginInput extends StatelessWidget {
   });
 
   @override
+  State<LoginInput> createState() => _LoginInputState();
+}
+
+class _LoginInputState extends State<LoginInput> {
+  bool obscure = true;
+  @override
+  void initState() {
+    super.initState();
+    obscure = widget.obscure;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TextField(
-      controller: controller,
-      obscureText: obscure,
+      controller: widget.controller,
+      obscureText: widget.obscure ? obscure : false,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: label,
+        labelText: widget.label,
         labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
         fillColor: const Color(0xFF313673),
@@ -72,6 +84,19 @@ class LoginInput extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
+        suffixIcon: widget.obscure
+            ? IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white70,
+                ),
+                onPressed: () {
+                  setState(() {
+                    obscure = !obscure;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }
@@ -151,7 +176,7 @@ class RoleSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final roles = [
-      "ROLE_ADMINiSTRADOR",
+      "ROLE_ADMIN",
       "ROLE_ALMACENISTA",
       "ROLE_DIRECTOR OBRA",
       "ROLE_RESIDENTE",

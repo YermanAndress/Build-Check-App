@@ -19,5 +19,5 @@ class ApiConfig {
   static const String materiales = '$baseUrl/materiales-service/materiales';
   static const String facturas = '$baseUrl/facturas-service/facturas';
   static const String alertas = '$baseUrl/materiales-service/alertas';
-  static const String usuarios = '$baseUrl/usuarios-service/login';
+  static const String usuarios = '$baseUrl/usuarios-service';
 }

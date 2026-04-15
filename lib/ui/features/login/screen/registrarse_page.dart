@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widget/login_items.dart';
+import '../../../../services/login_service.dart';
 
 class RegistrarsePage extends StatefulWidget {
   const RegistrarsePage({super.key});
@@ -19,16 +20,24 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
   void registrar() async {
     setState(() => loading = true);
 
-    // Aquí luego llamas a tu servicio real
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await LoginService().registrarUsuario(
+        nombre: nombreController.text.trim(),
+        correo: correoController.text.trim(),
+        password: passwordController.text.trim(),
+        rol: selectedRole,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Usuario registrado exitosamente")),
+      );
+      Navigator.pop(context); // volver al login
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al registrar usuario: $e")));
+    }
 
     setState(() => loading = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Usuario registrado (simulado)")),
-    );
-
-    Navigator.pop(context); // volver al login
   }
 
   @override

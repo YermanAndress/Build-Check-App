@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widget/login_items.dart';
+import '../../../../services/login_service.dart';
 
 class RecuperarpasswordPage extends StatefulWidget {
   const RecuperarpasswordPage({super.key});
@@ -14,15 +15,21 @@ class _RecuperarpasswordPageState extends State<RecuperarpasswordPage> {
 
   void enviarCorreo() async {
     setState(() => loading = true);
-
-    // Aquí luego llamas a tu servicio real
-    await Future.delayed(const Duration(seconds: 1));
-
+    try {
+      await LoginService().recuperarPassword(
+        emailController.text.trim(),
+        "nuevaContraseña123", // En un caso real, generarías una contraseña temporal o enviarías un enlace
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Correo de recuperación enviado")),
+      );
+      Navigator.pop(context); // volver al login
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al enviar correo: $e")));
+    }
     setState(() => loading = false);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Correo enviado (simulado)")));
   }
 
   @override
