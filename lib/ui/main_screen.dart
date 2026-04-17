@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'features/dashboard/screen/dashboard_page.dart';
 import 'features/proyectos/screen/proyectos_page.dart';
-import 'features/materiales/screen/materiales_page.dart';
+//import 'features/materiales/screen/materiales_page.dart';
 import 'features/movimientos/screen/movimientos_page.dart';
 import 'features/reporte/screen/reporte_page.dart';
 
@@ -20,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _paginas = [
     const DashboardPage(), // Tu Home actual
     const ProyectosPage(), // Placeholder o página real
-    const CatalogoScreen(), // ¡Aquí va tu nuevo catálogo!
+    //const CatalogoScreen(), // ¡Aquí va tu nuevo catálogo!
     const MovimientosPage(),
     const ReportePage(),
   ];
