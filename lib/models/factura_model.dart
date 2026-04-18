@@ -2,7 +2,7 @@ class Factura {
   final int? id;
   final String? numeroFactura;
   final DateTime fecha;
-  final String? proveedor;
+  final String proveedor;
   final String? observaciones;
   final double? valorTotal;
   final int proyectoId;
@@ -12,7 +12,7 @@ class Factura {
     this.id,
     this.numeroFactura,
     required this.fecha,
-    this.proveedor,
+    required this.proveedor,
     this.observaciones,
     this.valorTotal,
     required this.proyectoId,
@@ -20,7 +20,6 @@ class Factura {
     this.items = const [],
   });
 
-  // Convertir JSON a Objeto
   factory Factura.fromJson(Map<String, dynamic> json) {
     return Factura(
       id: json['id'],
@@ -29,11 +28,10 @@ class Factura {
           ? DateTime.parse(json['fecha'].toString())
           : DateTime.now(),
       proveedor: json['proveedor']?.toString() ?? 'Sin proveedor',
-      observaciones: json['observaciones']?.toString() ?? 'Sin observaciones',
-      valorTotal: json['valorTotal'] != null
-          ? double.tryParse(json['valorTotal'].toString()) ?? 0.0
-          : 0.0,
-      proyectoId: int.tryParse(json['proyectoId']?.toString() ?? '1') ?? 1,
+
+      observaciones: json['observaciones']?.toString() ?? '',
+      valorTotal: (json['valorTotal'] as num?)?.toDouble() ?? 0.0,
+      proyectoId: (json['proyectoId'] as num?)?.toInt() ?? 1,
       urlImagen: json['urlImagen']?.toString(),
     );
   }
@@ -50,6 +48,10 @@ class Factura {
     'proyectoId': proyectoId,
     'items': items.map((i) => i.toJson()).toList(),
   };
+
+  @override
+  String toString() =>
+      'Factura(id: $id, proveedor: $proveedor, total: $valorTotal)';
 }
 
 class FacturaMaterialItem {
