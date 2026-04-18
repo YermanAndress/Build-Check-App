@@ -4,7 +4,7 @@ import '../../core/api_config.dart';
 
 class LoginService {
   Future<Map<String, dynamic>> login(String correo, String password) async {
-    final url = Uri.parse(ApiConfig.usuarios + '/login');
+    final url = Uri.parse('${ApiConfig.usuarios}/login');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -25,7 +25,7 @@ class LoginService {
     required String password,
     required String rol,
   }) async {
-    final url = Uri.parse(ApiConfig.usuarios + '/usuarios');
+    final url = Uri.parse('${ApiConfig.usuarios}/usuarios');
     final body = {
       'nombre': nombre,
       'correo': correo,
