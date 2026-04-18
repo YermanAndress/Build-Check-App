@@ -7,6 +7,7 @@ class Factura {
   final double? valorTotal;
   final int proyectoId;
   final String? urlImagen;
+  final List<FacturaMaterialItem> items;
 
   Factura({
     this.id,
@@ -21,6 +22,11 @@ class Factura {
   });
 
   factory Factura.fromJson(Map<String, dynamic> json) {
+    var list = json['items'] as List?;
+    List<FacturaMaterialItem> itemsList = list != null
+        ? list.map((i) => FacturaMaterialItem.fromJson(i)).toList()
+        : [];
+
     return Factura(
       id: json['id'],
       numeroFactura: json['numeroFactura']?.toString() ?? '',
@@ -32,10 +38,9 @@ class Factura {
       valorTotal: (json['valorTotal'] as num?)?.toDouble() ?? 0.0,
       proyectoId: (json['proyectoId'] as num?)?.toInt() ?? 1,
       urlImagen: json['urlImagen']?.toString(),
+      items: itemsList,
     );
   }
-
-  final List<FacturaMaterialItem> items;
 
   Map<String, dynamic> toJson() => {
     'numeroFactura': numeroFactura,
@@ -66,9 +71,17 @@ class FacturaMaterialItem {
     required this.precioUnitario,
   });
 
+  factory FacturaMaterialItem.fromJson(Map<String, dynamic> json) {
+    return FacturaMaterialItem(
+      materialId: json['materialId'] ?? 0,
+      nombre: json['nombreMaterial'] ?? 'Sin nombre',
+      cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0.0,
+      precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'materialId': materialId,
-    'nombreMaterial': nombre,
     'cantidad': cantidad,
     'precioUnitario': precioUnitario,
   };

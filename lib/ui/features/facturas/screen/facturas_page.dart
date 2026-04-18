@@ -26,7 +26,7 @@ class _FacturasScreenState extends State<FacturasPage> {
 
   Future<void> _cargar() async {
     final lista = await _service.obtenerFacturas();
-    print("Facturas cargadas: $lista"); // <--- AGREGA ESTO
+    print("Facturas cargadas: $lista");
     if (mounted) {
       setState(() {
         _todasFacturas = lista;

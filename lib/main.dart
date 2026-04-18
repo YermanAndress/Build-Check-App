@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'ui/main_screen.dart';
 
-void main() {
-  // Asegura que los bindings de Flutter se inicialicen antes de cualquier plugin
+import 'package:intl/date_symbol_data_local.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Bloquear orientación vertical para mejor UX en inventarios
+  await initializeDateFormatting('es_ES', null);
+
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(const BuildCheckApp());
@@ -32,6 +35,10 @@ class BuildCheckApp extends StatelessWidget {
         ),
       ),
 
+      //Develop
+      //home: const Loginpage(),
+
+      // Desarrollo
       home: const MainScreen(),
     );
   }
