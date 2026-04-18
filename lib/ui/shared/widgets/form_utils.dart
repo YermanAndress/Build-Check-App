@@ -231,6 +231,7 @@ class OptionalField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hint,
+    required bool enabled,
     this.maxLines = 1,
   });
 

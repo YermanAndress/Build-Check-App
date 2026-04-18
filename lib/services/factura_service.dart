@@ -55,19 +55,29 @@ class FacturaService {
     }
   }
 
-  // En lib/services/factura_service.dart
-
   Future<List<Factura>> obtenerFacturas() async {
     try {
       final response = await http.get(Uri.parse(ApiConfig.facturas));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Factura.fromJson(json)).toList();
+        final decodedData = jsonDecode(response.body);
+
+        if (decodedData is List) {
+          return decodedData.map((json) => Factura.fromJson(json)).toList();
+        }
+
+        if (decodedData is Map<String, dynamic>) {
+          if (decodedData.containsKey('data') && decodedData['data'] is List) {
+            return (decodedData['data'] as List)
+                .map((json) => Factura.fromJson(json))
+                .toList();
+          }
+          return [Factura.fromJson(decodedData)];
+        }
       }
       return [];
     } catch (e) {
-      debugPrint("Error obteniendo facturas: $e");
+      debugPrint("Error detallado: $e");
       return [];
     }
   }
