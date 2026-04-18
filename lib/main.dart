@@ -1,3 +1,4 @@
+import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -32,7 +33,7 @@ class BuildCheckApp extends StatelessWidget {
         ),
       ),
 
-      home: const MainScreen(),
+      home: const Loginpage(),
     );
   }
 }
