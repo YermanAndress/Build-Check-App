@@ -9,50 +9,67 @@ class FacturaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fMoneda = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
-    final fFecha = DateFormat('dd MMM yyyy');
+    final fMoneda = NumberFormat.currency(
+      symbol: '\$',
+      decimalDigits: 0,
+      locale: 'es_CO',
+    );
+    final fFecha = DateFormat('dd MMM yyyy', 'es_ES');
 
     return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: (0.05)),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: const Color(0xFFEEEEEE)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFE3F2FD),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.description_outlined, color: Colors.blue),
+            child: const Icon(Icons.receipt_long_outlined, color: Colors.blue),
           ),
           const SizedBox(width: 16),
 
-          // Datos principales
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  factura.proveedor ?? 'Proveedor no registrado',
+                  factura.proveedor,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
+                    color: Color(0xFF263238),
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Factura: ${factura.numeroFactura}",
+                  style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
                 ),
                 Text(
                   fFecha.format(factura.fecha),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 11),
                 ),
               ],
             ),
           ),
 
-          // Monto
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -66,7 +83,11 @@ class FacturaCard extends StatelessWidget {
               ),
               const Text(
                 'Total Pago',
-                style: TextStyle(color: Colors.grey, fontSize: 10),
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

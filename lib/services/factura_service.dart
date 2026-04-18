@@ -61,18 +61,10 @@ class FacturaService {
 
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
-
-        if (decodedData is List) {
-          return decodedData.map((json) => Factura.fromJson(json)).toList();
-        }
-
-        if (decodedData is Map<String, dynamic>) {
-          if (decodedData.containsKey('data') && decodedData['data'] is List) {
-            return (decodedData['data'] as List)
-                .map((json) => Factura.fromJson(json))
-                .toList();
-          }
-          return [Factura.fromJson(decodedData)];
+        if (decodedData is Map<String, dynamic> &&
+            decodedData.containsKey('facturas')) {
+          final List listado = decodedData['facturas'];
+          return listado.map((json) => Factura.fromJson(json)).toList();
         }
       }
       return [];
