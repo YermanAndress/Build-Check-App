@@ -82,4 +82,23 @@ class MaterialService {
     final streamedRes = await request.send();
     return streamedRes.statusCode == 200 || streamedRes.statusCode == 201;
   }
+
+  Future<MaterialItem?> crearMaterial(String nombre, String unidad, double precio, double stock) async {
+    final response = await http.post(
+      Uri.parse(ApiConfig.materiales),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'nombre': nombre,
+        'unidadMedida': unidad,
+        'precioUnitario': precio,
+        'stockActual': stock,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return MaterialItem.fromJson(data['material']);
+    }
+    return null;
+  }
 }

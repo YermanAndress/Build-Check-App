@@ -1,4 +1,4 @@
-import 'package:build_check_app/ui/features/login/screen/recuperarPassword_page.dart';
+import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
 import 'package:flutter/material.dart';
 import '../widget/login_items.dart';

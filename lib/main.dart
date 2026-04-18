@@ -1,7 +1,7 @@
-import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'ui/main_screen.dart';
 
 void main() {
@@ -33,7 +33,11 @@ class BuildCheckApp extends StatelessWidget {
         ),
       ),
 
-      home: const Loginpage(),
+      //Develop
+      //home: const Loginpage(),
+
+      // Desarrollo
+      home: const MainScreen(),
     );
   }
 }
