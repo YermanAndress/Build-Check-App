@@ -1,6 +1,11 @@
+import 'dart:convert';
+
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/services/rsa_service.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../widget/login_items.dart';
 import '../../../../services/login_service.dart';
 import '../../../main_screen.dart';
@@ -41,6 +46,43 @@ class _LoginpageState extends State<Loginpage> {
     setState(() => loading = false);
   }
 
+  void probarRSA() async {
+    try {
+      final rsa = RsaService();
+
+      // 1. Obtener llave pública directamente
+      final url = Uri.parse('${ApiConfig.usuarios}/public-key');
+      final res = await http.get(url);
+      print('✅ Llave pública recibida: ${res.statusCode}');
+
+      final publicKey = jsonDecode(res.body)['publicKey'] as String;
+      print('🔑 Primeros 50 chars: ${publicKey.substring(0, 50)}');
+
+      // 2. Cargar y encriptar
+      rsa.loadPublicKey(publicKey);
+
+      final encriptado = rsa.encrypt('hola@gmail.com');
+      print('🔒 Encriptado (primeros 50): ${encriptado.substring(0, 50)}...');
+      print('📏 Longitud: ${encriptado.length}');
+      print('✅ RSA funciona correctamente en Flutter');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ RSA OK - Revisa la consola'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Error RSA: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,7 +116,19 @@ class _LoginpageState extends State<Loginpage> {
                   loading: loading,
                   onPressed: iniciarSesion,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+
+                // ── Botón temporal de prueba RSA ──────────────────────
+                TextButton(
+                  onPressed: probarRSA,
+                  child: const Text(
+                    'Probar RSA',
+                    style: TextStyle(color: Colors.yellow),
+                  ),
+                ),
+                // ── Eliminar el botón de arriba en producción ─────────
+
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
