@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// import 'package:build_check_app/ui/features/login/screen/login_page.dart';
+import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'ui/main_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
@@ -36,10 +36,10 @@ class BuildCheckApp extends StatelessWidget {
       ),
 
       //Develop
-      //home: const Loginpage(),
+      home: const Loginpage(),
 
       // Desarrollo
-      home: const MainScreen(),
+      //home: const MainScreen(),
     );
   }
 }

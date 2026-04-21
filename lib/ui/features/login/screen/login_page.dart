@@ -1,6 +1,11 @@
+import 'dart:convert';
+
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/services/rsa_service.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../widget/login_items.dart';
 import '../../../../services/login_service.dart';
 import '../../../main_screen.dart';
@@ -74,7 +79,9 @@ class _LoginpageState extends State<Loginpage> {
                   loading: loading,
                   onPressed: iniciarSesion,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
