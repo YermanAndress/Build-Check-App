@@ -6,7 +6,6 @@ import 'rsa_service.dart';
 class LoginService {
   final _rsa = RsaService();
 
-  /// Obtiene y carga la llave pública del backend
   Future<void> _loadPublicKey() async {
     final url = Uri.parse('${ApiConfig.usuarios}/public-key');
     final res = await http.get(url);
@@ -31,8 +30,8 @@ class LoginService {
       }),
     );
 
-    if (response.statusCode == 200)       return jsonDecode(response.body);
-    if (response.statusCode == 401)       throw Exception('Correo o contraseña incorrectos');
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    if (response.statusCode == 401) throw Exception('Correo o contraseña incorrectos');
     throw Exception('Error de servidor: ${response.statusCode}');
   }
 
@@ -49,10 +48,10 @@ class LoginService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'nombre':   _rsa.encrypt(nombre),
-        'correo':   _rsa.encrypt(correo),
-        'password': _rsa.encrypt(password),
-        'rol':      rol,   // el rol no es sensible, no se encripta
+        'nombre':   nombre,            // sin cifrar
+        'correo':   _rsa.encrypt(correo), // ✅ solo el correo se cifra
+        'password': password,          // sin cifrar, BCrypt lo maneja
+        'rol':      rol,
       }),
     );
 
@@ -61,10 +60,13 @@ class LoginService {
     }
   }
 
-  // recuperarPassword no cambia porque solo recibe el correo como query param
   Future<void> recuperarPassword(String correo) async {
-    final url = Uri.parse('${ApiConfig.usuarios}/usuarios/recuperar?correo=$correo');
+    final url = Uri.parse(
+      '${ApiConfig.usuarios}/usuarios/recuperar?correo=$correo',
+    );
     final res = await http.post(url);
-    if (res.statusCode != 200) throw Exception('Error al enviar correo de recuperación');
+    if (res.statusCode != 200) {
+      throw Exception('Error al enviar correo de recuperación');
+    }
   }
 }
