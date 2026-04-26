@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../models/material_model.dart';
+import 'package:build_check_app/models/material_model.dart';
 
 class MaterialDetailScreen extends StatefulWidget {
   final MaterialItem material;

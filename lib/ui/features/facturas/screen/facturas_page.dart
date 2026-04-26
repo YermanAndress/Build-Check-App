@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../models/factura_model.dart';
-import '../../../../services/factura_service.dart';
+import 'package:build_check_app/models/factura_model.dart';
+import 'package:build_check_app/services/factura_service.dart';
 
-import '../widget/factura_card.dart';
+import 'package:build_check_app/ui/features/facturas/widget/factura_card.dart';
 
 class FacturasPage extends StatefulWidget {
   const FacturasPage({super.key});

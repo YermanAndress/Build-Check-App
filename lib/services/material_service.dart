@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
-import '../core/api_config.dart';
-
-import '../models/material_model.dart';
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/models/material_model.dart';
 
 class MaterialService {
   static Map<int, MaterialItem>? _cacheMapaMateriales;
@@ -83,7 +82,12 @@ class MaterialService {
     return streamedRes.statusCode == 200 || streamedRes.statusCode == 201;
   }
 
-  Future<MaterialItem?> crearMaterial(String nombre, String unidad, double precio, double stock) async {
+  Future<MaterialItem?> crearMaterial(
+    String nombre,
+    String unidad,
+    double precio,
+    double stock,
+  ) async {
     final response = await http.post(
       Uri.parse(ApiConfig.materiales),
       headers: {'Content-Type': 'application/json'},

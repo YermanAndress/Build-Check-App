@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../models/material_model.dart';
-import '../../../../services/material_service.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/services/material_service.dart';
 
-import '../widget/material_card.dart';
+import 'package:build_check_app/ui/features/materiales/widget/material_card.dart';
 
 class MaterialesPage extends StatefulWidget {
   const MaterialesPage({super.key});

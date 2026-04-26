@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../models/material_model.dart';
-import '../widget/material_details.dart';
+
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/ui/features/materiales/widget/material_details.dart';
 
 class MaterialCard extends StatelessWidget {
   final MaterialItem material;

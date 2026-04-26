@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../models/factura_model.dart';
-import '../widget/factura_details.dart';
+import 'package:build_check_app/models/factura_model.dart';
+import 'package:build_check_app/ui/features/facturas/widget/factura_details.dart';
 
 class FacturaCard extends StatelessWidget {
   final Factura factura;

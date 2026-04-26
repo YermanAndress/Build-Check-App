@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../models/material_model.dart';
-import '../widgets/form_utils.dart';
+
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
 
 class StockBajoSheet extends StatelessWidget {
   final List<AlertaMaterial> alertas;

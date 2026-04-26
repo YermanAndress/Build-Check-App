@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../models/factura_model.dart';
+import 'package:build_check_app/models/factura_model.dart';
 
 class FacturaDetailsScreen extends StatefulWidget {
   final Factura factura;

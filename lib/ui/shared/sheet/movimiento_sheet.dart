@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
-import '../widgets/form_utils.dart';
-import '../../../core/api_config.dart';
-import '../../../models/material_model.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/core/api_config.dart';
 
 class MovimientoSheet extends StatefulWidget {
   final String tipo; // 'ENTRADA' o 'SALIDA'

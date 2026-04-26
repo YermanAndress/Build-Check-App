@@ -2,12 +2,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../widgets/form_utils.dart';
-import '../../../models/factura_model.dart';
-import '../../../models/material_model.dart';
-import '../../../services/factura_service.dart';
-import '../../../services/material_service.dart';
-import '../../../enum/unidad_medida.dart';
+import 'package:build_check_app/models/factura_model.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/services/factura_service.dart';
+import 'package:build_check_app/services/material_service.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/enum/unidad_medida.dart';
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -49,8 +49,14 @@ class _FacturaSheetState extends State<FacturaSheet> {
     super.dispose();
   }
 
-  // --- LÓGICA DE AGREGAR ---
-  void _agregarMaterial(int id, double cant, double precio, String nombre) {
+  // --- LÓGICA DE AGREGAR (materialId ahora es opcional) ---
+  void _agregarMaterial(
+    int? id,
+    double cant,
+    double precio,
+    String nombre,
+    String unidadMedida,
+  ) {
     setState(() {
       _itemsSeleccionados.add(
         FacturaMaterialItem(
@@ -58,6 +64,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
+          unidadMedida: unidadMedida,
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -189,10 +196,11 @@ class _FacturaSheetState extends State<FacturaSheet> {
             onPressed: () {
               if (cCtrl.text.isNotEmpty && pCtrl.text.isNotEmpty) {
                 _agregarMaterial(
-                  id,
+                  id, // material existente, enviamos su id
                   double.parse(cCtrl.text),
                   double.parse(pCtrl.text),
                   nombre,
+                  _unidadSeleccionada.toString(),
                 );
                 Navigator.pop(context);
               }
@@ -204,6 +212,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
+  // --- MODIFICADO: Ya NO crea el material en el backend, solo lo agrega localmente con id = null ---
   void _dialogoCrearNuevo() {
     final nCtrl = TextEditingController();
     final cCtrl = TextEditingController();
@@ -254,29 +263,20 @@ class _FacturaSheetState extends State<FacturaSheet> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 if (nCtrl.text.isEmpty) return;
 
-                final nuevo = await _materialService.crearMaterial(
-                  nCtrl.text,
-                  _unidadSeleccionada.name,
-                  double.tryParse(pCtrl.text) ?? 0,
+                // SIMPLEMENTE AGREGAMOS EL MATERIAL A LA LISTA, SIN LLAMAR AL BACKEND
+                _agregarMaterial(
+                  null, // ⬅️ importante: sin id, el backend lo creará al guardar la factura
                   double.tryParse(cCtrl.text) ?? 0,
+                  double.tryParse(pCtrl.text) ?? 0,
+                  nCtrl.text,
+                  _unidadSeleccionada.toString(),
                 );
-
-                if (nuevo != null) {
-                  _agregarMaterial(
-                    nuevo.id,
-                    double.tryParse(cCtrl.text) ?? 0,
-                    double.tryParse(pCtrl.text) ?? 0,
-                    nCtrl.text,
-                  );
-                  if (mounted) Navigator.pop(context);
-                } else {
-                  _mostrarSnack('Error al crear material base', isError: true);
-                }
+                Navigator.pop(context);
               },
-              child: const Text("Crear y Añadir"),
+              child: const Text("Agregar a la factura"),
             ),
           ],
         ),
