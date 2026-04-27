@@ -18,16 +18,22 @@ class _RecuperarpasswordPageState extends State<RecuperarpasswordPage> {
     setState(() => loading = true);
     try {
       await LoginService().recuperarPassword(emailController.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Correo de recuperación enviado")),
-      );
-      Navigator.pop(context); // volver al login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Correo de recuperación enviado")),
+        );
+        Navigator.pop(context); // volver al login
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error al enviar correo: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error al enviar correo: $e")));
+      }
     }
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   @override

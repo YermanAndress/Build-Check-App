@@ -32,8 +32,9 @@ class LoginService {
     );
 
     if (response.statusCode == 200) return jsonDecode(response.body);
-    if (response.statusCode == 401)
+    if (response.statusCode == 401) {
       throw Exception('Correo o contraseña incorrectos');
+    }
     throw Exception('Error de servidor: ${response.statusCode}');
   }
 
