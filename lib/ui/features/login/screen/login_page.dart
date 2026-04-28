@@ -1,14 +1,10 @@
-import 'dart:convert';
+import 'package:flutter/material.dart';
 
-import 'package:build_check_app/core/api_config.dart';
-import 'package:build_check_app/services/rsa_service.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../widget/login_items.dart';
-import '../../../../services/login_service.dart';
-import '../../../main_screen.dart';
+import 'package:build_check_app/ui/features/login/widget/login_items.dart';
+import 'package:build_check_app/services/login_service.dart';
+import 'package:build_check_app/ui/main_screen.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -33,17 +29,24 @@ class _LoginpageState extends State<Loginpage> {
         passwordController.text.trim(),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      // Verificar que el widget siga montado antes de navegar
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
+        );
+      }
     }
 
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   @override

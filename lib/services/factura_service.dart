@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
-import '../core/api_config.dart';
-import '../models/factura_model.dart';
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/models/factura_model.dart';
 
 class FacturaService {
   Future<bool> registrarFacturaManual(Factura factura) async {

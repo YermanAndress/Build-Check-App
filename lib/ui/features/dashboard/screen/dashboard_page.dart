@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../../shared/sheet/factura_sheet.dart';
-import '../../../shared/sheet/movimiento_sheet.dart';
-import '../../../shared/sheet/stock_bajo_sheet.dart';
+import 'package:build_check_app/ui/shared/sheet/factura_sheet.dart';
+import 'package:build_check_app/ui/shared/sheet/movimiento_sheet.dart';
+import 'package:build_check_app/ui/shared/sheet/stock_bajo_sheet.dart';
 
-import '../widget/dashboard_items.dart';
-import '../../../shared/widgets/stat_card.dart';
+import 'package:build_check_app/ui/features/dashboard/widget/dashboard_items.dart';
+import 'package:build_check_app/ui/shared/widgets/stat_card.dart';
 
-import '../../../../services/movimiento_service.dart';
-import '../../../../services/material_service.dart';
+import 'package:build_check_app/services/movimiento_service.dart';
+import 'package:build_check_app/services/material_service.dart';
 
-import '../../../../models/material_model.dart';
-import '../../../../models/movimiento_model.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/models/movimiento_model.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -226,11 +226,11 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(20), // <---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const SizedBox(width: 20),
                   Expanded(
                     child: QuickActionButton(
                       label: 'Registrar\nEntrada',
@@ -240,7 +240,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       onTap: _abrirRegistrarEntrada,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: QuickActionButton(
                       label: 'Registrar\nSalida',
@@ -250,7 +250,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       onTap: _abrirRegistrarSalida,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: QuickActionButton(
                       label: 'Escanear\nFactura',

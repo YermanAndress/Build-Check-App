@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../core/api_config.dart';
-import 'rsa_service.dart';
+
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/services/rsa_service.dart';
 
 class LoginService {
   final _rsa = RsaService();
@@ -25,13 +26,15 @@ class LoginService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'correo':   _rsa.encrypt(correo),
+        'correo': _rsa.encrypt(correo),
         'password': _rsa.encrypt(password),
       }),
     );
 
     if (response.statusCode == 200) return jsonDecode(response.body);
-    if (response.statusCode == 401) throw Exception('Correo o contraseña incorrectos');
+    if (response.statusCode == 401) {
+      throw Exception('Correo o contraseña incorrectos');
+    }
     throw Exception('Error de servidor: ${response.statusCode}');
   }
 
@@ -48,10 +51,10 @@ class LoginService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'nombre':   nombre,            // sin cifrar
-        'correo':   _rsa.encrypt(correo), // ✅ solo el correo se cifra
-        'password': password,          // sin cifrar, BCrypt lo maneja
-        'rol':      rol,
+        'nombre': nombre, // sin cifrar
+        'correo': _rsa.encrypt(correo), // ✅ solo el correo se cifra
+        'password': password, // sin cifrar, BCrypt lo maneja
+        'rol': rol,
       }),
     );
 

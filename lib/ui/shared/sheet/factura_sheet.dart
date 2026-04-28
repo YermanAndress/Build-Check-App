@@ -2,12 +2,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../widgets/form_utils.dart';
-import '../../../models/factura_model.dart';
-import '../../../models/material_model.dart';
-import '../../../services/factura_service.dart';
-import '../../../services/material_service.dart';
-import '../../../enum/unidad_medida.dart';
+import 'package:build_check_app/models/factura_model.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/services/factura_service.dart';
+import 'package:build_check_app/services/material_service.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/enum/unidad_medida.dart';
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -32,7 +32,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final DateTime _fecha = DateTime.now();
   Uint8List? _fotoBytes;
   bool _enviando = false;
-  UnidadMedida _unidadSeleccionada = UnidadMedida.UNIDAD;
 
   double get _totalCalculado => _itemsSeleccionados.fold(
     0.0,
@@ -49,8 +48,14 @@ class _FacturaSheetState extends State<FacturaSheet> {
     super.dispose();
   }
 
-  // --- LÓGICA DE AGREGAR ---
-  void _agregarMaterial(int id, double cant, double precio, String nombre) {
+  // --- LÓGICA DE AGREGAR (materialId ahora es opcional) ---
+  void _agregarMaterial(
+    int? id,
+    double cant,
+    double precio,
+    String nombre,
+    UnidadMedida unidad,
+  ) {
     setState(() {
       _itemsSeleccionados.add(
         FacturaMaterialItem(
@@ -58,6 +63,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
+          unidadMedida: unidad, // directo
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -148,6 +154,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                           _pedirCantidades(
                             filtrados[i].id,
                             filtrados[i].nombre,
+                            filtrados[i].unidadMedida,
                           );
                         },
                       ),
@@ -162,7 +169,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  void _pedirCantidades(int id, String nombre) {
+  void _pedirCantidades(int id, String nombre, String unidadMedidaStr) {
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
     showDialog(
@@ -193,6 +200,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   double.parse(cCtrl.text),
                   double.parse(pCtrl.text),
                   nombre,
+                  UnidadMedida.values.byName(unidadMedidaStr),
                 );
                 Navigator.pop(context);
               }
@@ -208,6 +216,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     final nCtrl = TextEditingController();
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
+    UnidadMedida tempUnidad = UnidadMedida.UNIDAD;
 
     showDialog(
       context: context,
@@ -224,18 +233,18 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<UnidadMedida>(
-                  initialValue: _unidadSeleccionada,
-                  decoration: const InputDecoration(
-                    labelText: "Unidad de Medida",
-                  ),
+                  initialValue: tempUnidad,
                   items: UnidadMedida.values
                       .map(
-                        (u) =>
-                            DropdownMenuItem(value: u, child: Text(u.nombre)),
+                        (u) => DropdownMenuItem(
+                          value: u,
+                          child: Text(u.nombre), // muestra texto amigable
+                        ),
                       )
                       .toList(),
-                  onChanged: (val) =>
-                      setDialogState(() => _unidadSeleccionada = val!),
+                  onChanged: (val) => setDialogState(() {
+                    tempUnidad = val!;
+                  }),
                 ),
                 TextField(
                   controller: cCtrl,
@@ -254,29 +263,18 @@ class _FacturaSheetState extends State<FacturaSheet> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 if (nCtrl.text.isEmpty) return;
-
-                final nuevo = await _materialService.crearMaterial(
-                  nCtrl.text,
-                  _unidadSeleccionada.name,
-                  double.tryParse(pCtrl.text) ?? 0,
+                _agregarMaterial(
+                  null,
                   double.tryParse(cCtrl.text) ?? 0,
+                  double.tryParse(pCtrl.text) ?? 0,
+                  nCtrl.text,
+                  tempUnidad, // ✅ enum
                 );
-
-                if (nuevo != null) {
-                  _agregarMaterial(
-                    nuevo.id,
-                    double.tryParse(cCtrl.text) ?? 0,
-                    double.tryParse(pCtrl.text) ?? 0,
-                    nCtrl.text,
-                  );
-                  if (mounted) Navigator.pop(context);
-                } else {
-                  _mostrarSnack('Error al crear material base', isError: true);
-                }
+                Navigator.pop(context);
               },
-              child: const Text("Crear y Añadir"),
+              child: const Text("Agregar a la factura"),
             ),
           ],
         ),

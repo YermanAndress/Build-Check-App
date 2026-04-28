@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widget/login_items.dart';
-import '../../../../services/login_service.dart';
+
+import 'package:build_check_app/ui/features/login/widget/login_items.dart';
+import 'package:build_check_app/services/login_service.dart';
 
 class RegistrarsePage extends StatefulWidget {
   const RegistrarsePage({super.key});
@@ -27,17 +28,22 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
         password: passwordController.text.trim(),
         rol: selectedRole,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Usuario registrado exitosamente")),
-      );
-      Navigator.pop(context); // volver al login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Usuario registrado exitosamente")),
+        );
+        Navigator.pop(context); // volver al login
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error al registrar usuario: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al registrar usuario: $e")),
+        );
+      }
     }
-
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   @override

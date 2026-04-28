@@ -1,3 +1,5 @@
+import 'package:build_check_app/enum/unidad_medida.dart';
+
 class Factura {
   final int? id;
   final String? numeroFactura;
@@ -60,30 +62,37 @@ class Factura {
 }
 
 class FacturaMaterialItem {
-  final int materialId;
+  final int? materialId;
   final String nombre;
   final double cantidad;
   final double precioUnitario;
+  final UnidadMedida unidadMedida;
 
   FacturaMaterialItem({
-    required this.materialId,
+    this.materialId,
     required this.nombre,
     required this.cantidad,
     required this.precioUnitario,
+    required this.unidadMedida,
   });
 
   factory FacturaMaterialItem.fromJson(Map<String, dynamic> json) {
     return FacturaMaterialItem(
       materialId: json['materialId'] ?? 0,
-      nombre: json['nombreMaterial'] ?? 'Sin nombre',
+      nombre: json['nombre'] ?? 'Sin nombre',
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0.0,
       precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
+      unidadMedida: UnidadMedida.values.byName(
+        json['unidadMedida'] ?? 'UNIDAD',
+      ),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'materialId': materialId,
+    'nombre': nombre,
     'cantidad': cantidad,
     'precioUnitario': precioUnitario,
+    'unidadMedida': unidadMedida.name,
   };
 }
