@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:build_check_app/main.dart';
+import 'package:build_check_app/services/auth_header.dart';
+import 'package:build_check_app/services/http_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,13 +14,23 @@ import 'package:build_check_app/models/movimiento_model.dart';
 class MovimientoService {
   Future<Map<String, dynamic>> obtenerStatsHoy() async {
     try {
+      final headers = await AuthHeader.getHeaders();
       final responses = await Future.wait([
-        http.get(Uri.parse(ApiConfig.movimientos)),
-        http.get(Uri.parse(ApiConfig.materiales)),
+        http.get(Uri.parse(ApiConfig.movimientos), headers: headers),
+        http.get(Uri.parse(ApiConfig.materiales), headers: headers),
       ]);
 
       final resMov = responses[0];
       final resMat = responses[1];
+
+      // Detectar expiracion del token JWT
+      if (resMov.statusCode == 401 || resMat.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return {};
+      }
+
+      // Detectar errores
+      if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
 
       // Helper para normalizar la respuesta de n8n (siempre a Lista)
       List normalizar(dynamic data, String key) {
@@ -38,8 +51,6 @@ class MovimientoService {
       }
 
       // 2. Procesar Movimientos
-      if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
-
       final decodedMov = jsonDecode(resMov.body);
       final rawMov = normalizar(decodedMov, 'movimientos');
 

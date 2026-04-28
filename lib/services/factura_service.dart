@@ -1,16 +1,19 @@
 import 'dart:convert';
+import 'package:build_check_app/services/auth_header.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/models/factura_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FacturaService {
   Future<bool> registrarFacturaManual(Factura factura) async {
     try {
+      final headers = await AuthHeader.getHeaders();
       final response = await http.post(
         Uri.parse(ApiConfig.facturas),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode(factura.toJson()),
       );
       return response.statusCode == 200 || response.statusCode == 201;
@@ -26,10 +29,13 @@ class FacturaService {
     required int proyectoId,
   }) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
       var request = http.MultipartRequest(
         'POST',
         Uri.parse(ApiConfig.facturas),
       );
+      request.headers["Authorization"] = "Bearer $token";
 
       request.fields['fecha'] =
           "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
@@ -57,7 +63,11 @@ class FacturaService {
 
   Future<List<Factura>> obtenerFacturas() async {
     try {
-      final response = await http.get(Uri.parse(ApiConfig.facturas));
+      final headers = await AuthHeader.getHeaders();
+      final response = await http.get(
+        Uri.parse(ApiConfig.facturas),
+        headers: headers,
+      );
 
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
