@@ -1,3 +1,5 @@
+import 'package:build_check_app/enum/unidad_medida.dart';
+
 class Factura {
   final int? id;
   final String? numeroFactura;
@@ -64,7 +66,7 @@ class FacturaMaterialItem {
   final String nombre;
   final double cantidad;
   final double precioUnitario;
-  final String unidadMedida;
+  final UnidadMedida unidadMedida;
 
   FacturaMaterialItem({
     this.materialId,
@@ -80,7 +82,9 @@ class FacturaMaterialItem {
       nombre: json['nombre'] ?? 'Sin nombre',
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0.0,
       precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
-      unidadMedida: (json['unidadMedida'] as String?) ?? 'Sin unidad',
+      unidadMedida: UnidadMedida.values.byName(
+        json['unidadMedida'] ?? 'UNIDAD',
+      ),
     );
   }
 
@@ -89,6 +93,6 @@ class FacturaMaterialItem {
     'nombre': nombre,
     'cantidad': cantidad,
     'precioUnitario': precioUnitario,
-    'unidadMedida': unidadMedida,
+    'unidadMedida': unidadMedida.name,
   };
 }

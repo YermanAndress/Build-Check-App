@@ -32,7 +32,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final DateTime _fecha = DateTime.now();
   Uint8List? _fotoBytes;
   bool _enviando = false;
-  UnidadMedida _unidadSeleccionada = UnidadMedida.UNIDAD;
 
   double get _totalCalculado => _itemsSeleccionados.fold(
     0.0,
@@ -55,7 +54,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     double cant,
     double precio,
     String nombre,
-    String unidadMedida,
+    UnidadMedida unidad,
   ) {
     setState(() {
       _itemsSeleccionados.add(
@@ -64,7 +63,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
-          unidadMedida: unidadMedida,
+          unidadMedida: unidad, // directo
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -155,6 +154,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                           _pedirCantidades(
                             filtrados[i].id,
                             filtrados[i].nombre,
+                            filtrados[i].unidadMedida,
                           );
                         },
                       ),
@@ -169,7 +169,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  void _pedirCantidades(int id, String nombre) {
+  void _pedirCantidades(int id, String nombre, String unidadMedidaStr) {
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
     showDialog(
@@ -196,11 +196,11 @@ class _FacturaSheetState extends State<FacturaSheet> {
             onPressed: () {
               if (cCtrl.text.isNotEmpty && pCtrl.text.isNotEmpty) {
                 _agregarMaterial(
-                  id, // material existente, enviamos su id
+                  id,
                   double.parse(cCtrl.text),
                   double.parse(pCtrl.text),
                   nombre,
-                  _unidadSeleccionada.toString(),
+                  UnidadMedida.values.byName(unidadMedidaStr),
                 );
                 Navigator.pop(context);
               }
@@ -212,11 +212,11 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  // --- MODIFICADO: Ya NO crea el material en el backend, solo lo agrega localmente con id = null ---
   void _dialogoCrearNuevo() {
     final nCtrl = TextEditingController();
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
+    UnidadMedida tempUnidad = UnidadMedida.UNIDAD;
 
     showDialog(
       context: context,
@@ -233,18 +233,18 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<UnidadMedida>(
-                  initialValue: _unidadSeleccionada,
-                  decoration: const InputDecoration(
-                    labelText: "Unidad de Medida",
-                  ),
+                  initialValue: tempUnidad,
                   items: UnidadMedida.values
                       .map(
-                        (u) =>
-                            DropdownMenuItem(value: u, child: Text(u.nombre)),
+                        (u) => DropdownMenuItem(
+                          value: u,
+                          child: Text(u.nombre), // muestra texto amigable
+                        ),
                       )
                       .toList(),
-                  onChanged: (val) =>
-                      setDialogState(() => _unidadSeleccionada = val!),
+                  onChanged: (val) => setDialogState(() {
+                    tempUnidad = val!;
+                  }),
                 ),
                 TextField(
                   controller: cCtrl,
@@ -265,14 +265,12 @@ class _FacturaSheetState extends State<FacturaSheet> {
             ElevatedButton(
               onPressed: () {
                 if (nCtrl.text.isEmpty) return;
-
-                // SIMPLEMENTE AGREGAMOS EL MATERIAL A LA LISTA, SIN LLAMAR AL BACKEND
                 _agregarMaterial(
-                  null, // ⬅️ importante: sin id, el backend lo creará al guardar la factura
+                  null,
                   double.tryParse(cCtrl.text) ?? 0,
                   double.tryParse(pCtrl.text) ?? 0,
                   nCtrl.text,
-                  _unidadSeleccionada.toString(),
+                  tempUnidad, // ✅ enum
                 );
                 Navigator.pop(context);
               },
