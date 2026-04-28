@@ -7,6 +7,7 @@ import 'ui/main_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,6 +24,7 @@ class BuildCheckApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Build Check',
       debugShowCheckedModeBanner: false,
 

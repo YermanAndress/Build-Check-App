@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
+import 'package:build_check_app/services/http_handler.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
@@ -15,6 +17,10 @@ class MaterialService {
   Future<List<AlertaMaterial>> obtenerAlertas() async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.get(Uri.parse(ApiConfig.alertas), headers: headers);
+    if (res.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return [];
+    }
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       List raw = (decoded is List)
@@ -41,6 +47,11 @@ class MaterialService {
     );
     final Map<int, MaterialItem> nuevoMapa = {};
 
+    if (res.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return {};
+    }
+
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       List raw = decoded is List ? decoded : (decoded['materiales'] ?? []);
@@ -64,6 +75,11 @@ class MaterialService {
       headers: headers,
       body: jsonEncode(data),
     );
+
+    if (res.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return false;
+    }
     return res.statusCode == 200 || res.statusCode == 201;
   }
 
@@ -88,6 +104,10 @@ class MaterialService {
     }
 
     final streamedRes = await request.send();
+    if (streamedRes.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return false;
+    }
     return streamedRes.statusCode == 200 || streamedRes.statusCode == 201;
   }
 
@@ -108,6 +128,11 @@ class MaterialService {
         'stockActual': stock,
       }),
     );
+
+    if (response.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return null;
+    }
 
     if (response.statusCode == 201) {
       final Map<String, dynamic> data = jsonDecode(response.body);

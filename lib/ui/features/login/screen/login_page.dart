@@ -37,7 +37,7 @@ class _LoginpageState extends State<Loginpage> {
       final prefs = await SharedPreferences.getInstance();
       prefs.setString("token", data["token"]);
       prefs.setString("usuario", jsonEncode(data["usuario"]));
-      print(prefs.getString("token"));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       Navigator.pushReplacement(
         context,
