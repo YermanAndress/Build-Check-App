@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:build_check_app/services/auth_header.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,9 +12,10 @@ import 'package:build_check_app/models/movimiento_model.dart';
 class MovimientoService {
   Future<Map<String, dynamic>> obtenerStatsHoy() async {
     try {
+      final headers = await AuthHeader.getHeaders();
       final responses = await Future.wait([
-        http.get(Uri.parse(ApiConfig.movimientos)),
-        http.get(Uri.parse(ApiConfig.materiales)),
+        http.get(Uri.parse(ApiConfig.movimientos), headers: headers),
+        http.get(Uri.parse(ApiConfig.materiales), headers: headers),
       ]);
 
       final resMov = responses[0];

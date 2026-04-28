@@ -1,10 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/services/rsa_service.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
-import 'package:build_check_app/ui/features/login/widget/login_items.dart';
-import 'package:build_check_app/services/login_service.dart';
-import 'package:build_check_app/ui/main_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../widget/login_items.dart';
+import '../../../../services/login_service.dart';
+import '../../../main_screen.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -24,29 +29,27 @@ class _LoginpageState extends State<Loginpage> {
     final auth = LoginService();
 
     try {
-      await auth.login(
+      final data = await auth.login(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
-      // Verificar que el widget siga montado antes de navegar
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
-      }
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString("token", data["token"]);
+      prefs.setString("usuario", jsonEncode(data["usuario"]));
+      print(prefs.getString("token"));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
+      );
     }
 
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    setState(() => loading = false);
   }
 
   @override

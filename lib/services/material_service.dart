@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/services/auth_header.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/models/material_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MaterialService {
   static Map<int, MaterialItem>? _cacheMapaMateriales;
@@ -11,7 +13,8 @@ class MaterialService {
 
   // Obtener alertas de stock bajo
   Future<List<AlertaMaterial>> obtenerAlertas() async {
-    final res = await http.get(Uri.parse(ApiConfig.alertas));
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.get(Uri.parse(ApiConfig.alertas), headers: headers);
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       List raw = (decoded is List)
@@ -31,8 +34,11 @@ class MaterialService {
       final diferencia = DateTime.now().difference(_ultimaCarga!);
       if (diferencia.inMinutes < 5) return _cacheMapaMateriales!;
     }
-
-    final res = await http.get(Uri.parse(ApiConfig.materiales));
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.get(
+      Uri.parse(ApiConfig.materiales),
+      headers: headers,
+    );
     final Map<int, MaterialItem> nuevoMapa = {};
 
     if (res.statusCode == 200) {
@@ -52,9 +58,10 @@ class MaterialService {
 
   // Registrar un nuevo movimiento
   Future<bool> registrarMovimiento(Map<String, dynamic> data) async {
+    final headers = await AuthHeader.getHeaders();
     final res = await http.post(
       Uri.parse(ApiConfig.movimientos),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode(data),
     );
     return res.statusCode == 200 || res.statusCode == 201;
@@ -65,8 +72,10 @@ class MaterialService {
     Map<String, String> fields,
     Uint8List? imageBytes,
   ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("token");
     var request = http.MultipartRequest('POST', Uri.parse(ApiConfig.facturas));
-    request.fields.addAll(fields);
+    request.headers["Authorization"] = "Bearer $token";
 
     if (imageBytes != null) {
       request.files.add(
@@ -88,9 +97,10 @@ class MaterialService {
     double precio,
     double stock,
   ) async {
+    final headers = await AuthHeader.getHeaders();
     final response = await http.post(
       Uri.parse(ApiConfig.materiales),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode({
         'nombre': nombre,
         'unidadMedida': unidad,
