@@ -51,6 +51,7 @@ class MovimientoService {
       }
 
       // 2. Procesar Movimientos
+      if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
       final decodedMov = jsonDecode(resMov.body);
       final rawMov = normalizar(decodedMov, 'movimientos');
 

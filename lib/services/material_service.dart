@@ -91,6 +91,7 @@ class MaterialService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
     var request = http.MultipartRequest('POST', Uri.parse(ApiConfig.facturas));
+    request.fields.addAll(fields);
     request.headers["Authorization"] = "Bearer $token";
 
     if (imageBytes != null) {
