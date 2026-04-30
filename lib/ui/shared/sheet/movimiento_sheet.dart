@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/services/auth_header.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -71,7 +72,11 @@ class MovimientoSheetState extends State<MovimientoSheet> {
 
   Future<void> _cargarMateriales() async {
     try {
-      final res = await http.get(Uri.parse(ApiConfig.materiales));
+      final headers = await AuthHeader.getHeaders();
+      final res = await http.get(
+        Uri.parse(ApiConfig.materiales),
+        headers: headers,
+      );
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -79,6 +84,11 @@ class MovimientoSheetState extends State<MovimientoSheet> {
             : (decoded['materiales'] ?? []);
         setState(() {
           _materiales = rawLista.map((e) => MaterialItem.fromJson(e)).toList();
+          _loadingMateriales = false;
+        });
+      } else {
+        setState(() {
+          errorMateriales = 'Error ${res.statusCode}';
           _loadingMateriales = false;
         });
       }
@@ -108,9 +118,10 @@ class MovimientoSheetState extends State<MovimientoSheet> {
     });
 
     try {
+      final headers = await AuthHeader.getHeaders();
       final res = await http.post(
         Uri.parse(ApiConfig.movimientos),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: body,
       );
       if (!mounted) return;
