@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/ui/shared/sheet/factura_sheet.dart';
@@ -12,6 +15,7 @@ import 'package:build_check_app/services/material_service.dart';
 
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -137,12 +141,58 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             onPressed: () {},
           ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(
               Icons.account_circle_outlined,
               color: Color(0xFF555555),
             ),
-            onPressed: () {},
+            onSelected: (value) async {
+              if (value == 'logout') {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove("token");
+                await prefs.remove("usuario");
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const Loginpage()),
+                );
+              }
+            },
+            itemBuilder: (context) {
+              return [
+                PopupMenuItem(
+                  enabled: false,
+                  child: FutureBuilder(
+                    future: SharedPreferences.getInstance(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox();
+                      final prefs = snapshot.data!;
+                      final usuarioJson = prefs.getString("usuario");
+                      if (usuarioJson == null) return const SizedBox();
+                      final usuario = jsonDecode(usuarioJson);
+                      final nombre = usuario["nombre"] ?? "Usuario";
+                      return Text(
+                        "Hola, $nombre",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text("Cerrar sesion"),
+                    ],
+                  ),
+                ),
+              ];
+            },
           ),
           const SizedBox(width: 4),
         ],
