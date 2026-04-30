@@ -41,7 +41,9 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _cargarStatsHoy();
-    _materialService.obtenerAlertas();
+    Future.microtask(() async {
+      await _materialService.obtenerAlertas();
+    });
   }
 
   final MovimientoService _movimientoService = MovimientoService();
@@ -94,7 +96,10 @@ class _DashboardPageState extends State<DashboardPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'ENTRADA'),
-    ).then((_) => _cargarStatsHoy());
+    ).then((_) async {
+      await _cargarStatsHoy();
+      await _materialService.obtenerAlertas();
+    });
   }
 
   void _abrirRegistrarSalida() {
@@ -103,9 +108,10 @@ class _DashboardPageState extends State<DashboardPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'SALIDA'),
-    ).then((_) {
-      _cargarStatsHoy();
-      _materialService.obtenerAlertas(); // refrescar stock bajo tras una salida
+    ).then((_) async {
+      await _cargarStatsHoy();
+      await _materialService
+          .obtenerAlertas(); // refrescar stock bajo tras una salida
     });
   }
 
