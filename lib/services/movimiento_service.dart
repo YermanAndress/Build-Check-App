@@ -11,8 +11,9 @@ import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
 
 // movimiento_service.dart
+
 class MovimientoService {
-  Future<Map<String, dynamic>> obtenerStatsHoy() async {
+  Future<Map<String, dynamic>> obtenerStatsHoy({bool soloHoy = true}) async {
     try {
       final headers = await AuthHeader.getHeaders();
       final responses = await Future.wait([
@@ -23,20 +24,17 @@ class MovimientoService {
       final resMov = responses[0];
       final resMat = responses[1];
 
-      // Detectar expiracion del token JWT
       if (resMov.statusCode == 401 || resMat.statusCode == 401) {
         await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
         return {};
       }
 
-      // Detectar errores
       if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
 
-      // Helper para normalizar la respuesta de n8n (siempre a Lista)
       List normalizar(dynamic data, String key) {
         if (data is List) return data;
         if (data is Map && data.containsKey(key)) return data[key] as List;
-        return [data]; // Si es un objeto solo, lo metemos en lista
+        return [data];
       }
 
       // 1. Procesar Materiales
@@ -51,41 +49,35 @@ class MovimientoService {
       }
 
       // 2. Procesar Movimientos
-      if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
       final decodedMov = jsonDecode(resMov.body);
       final rawMov = normalizar(decodedMov, 'movimientos');
-
       final hoy = DateTime.now();
 
-      // Procesamiento en una sola pasada (más eficiente)
-      final hoyLista =
-          rawMov
-              .map((e) {
-                final m = MovimientoResumen.fromJson(e);
-                // Cruzar con material
-                final mat = matMap[m.materialId];
-                return mat != null
-                    ? m.conMaterial(mat.nombre, mat.unidadMedida)
-                    : m;
-              })
-              .where(
-                (m) =>
-                    m.fecha.year == hoy.year &&
-                    m.fecha.month == hoy.month &&
-                    m.fecha.day == hoy.day,
-              )
-              .toList()
-            ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+      // Mapear y cruzar datos (Cualquier movimiento)
+      Iterable<MovimientoResumen> iterador = rawMov.map((e) {
+        final m = MovimientoResumen.fromJson(e);
+        final mat = matMap[m.materialId];
+        return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
+      });
+
+      // FILTRO CONDICIONAL: Solo si soloHoy es true, aplicamos el filtro de fecha
+      if (soloHoy) {
+        iterador = iterador.where(
+          (m) =>
+              m.fecha.year == hoy.year &&
+              m.fecha.month == hoy.month &&
+              m.fecha.day == hoy.day,
+        );
+      }
+
+      final listaFinal = iterador.toList()
+        ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
 
       return {
-        'movimientos': hoyLista,
+        'movimientos': listaFinal,
         'totalMateriales': matMap.length,
-        'entradasHoy': hoyLista
-            .where((m) => m.tipoMovimiento == 'ENTRADA')
-            .length,
-        'salidasHoy': hoyLista
-            .where((m) => m.tipoMovimiento == 'SALIDA')
-            .length,
+        'entradasHoy': listaFinal.where((m) => m.tipoMovimiento == 'ENTRADA').length,
+        'salidasHoy': listaFinal.where((m) => m.tipoMovimiento == 'SALIDA').length,
       };
     } catch (e) {
       debugPrint('DEBUG: Error en MovimientoService: $e');
