@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
-
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
 
-// movimiento_service.dart
-
 class MovimientoService {
-  Future<Map<String, dynamic>> obtenerStatsHoy({bool soloHoy = true}) async {
+  /// [soloHoy] = true  → filtra solo movimientos del día actual (comportamiento original)
+  /// [soloHoy] = false → devuelve todo el historial
+  Future<Map<String, dynamic>> obtenerStatsHoy({
+    bool soloHoy = true,
+  }) async {
     try {
       final headers = await AuthHeader.getHeaders();
       final responses = await Future.wait([
@@ -37,7 +38,7 @@ class MovimientoService {
         return [data];
       }
 
-      // 1. Procesar Materiales
+      // Procesar materiales
       final Map<int, MaterialItem> matMap = {};
       if (resMat.statusCode == 200) {
         final decoded = jsonDecode(resMat.body);
@@ -48,40 +49,57 @@ class MovimientoService {
         }
       }
 
-      // 2. Procesar Movimientos
+      // Procesar movimientos
       final decodedMov = jsonDecode(resMov.body);
       final rawMov = normalizar(decodedMov, 'movimientos');
       final hoy = DateTime.now();
 
-      // Mapear y cruzar datos (Cualquier movimiento)
-      Iterable<MovimientoResumen> iterador = rawMov.map((e) {
-        final m = MovimientoResumen.fromJson(e);
-        final mat = matMap[m.materialId];
-        return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
-      });
-
-      // FILTRO CONDICIONAL: Solo si soloHoy es true, aplicamos el filtro de fecha
-      if (soloHoy) {
-        iterador = iterador.where(
-          (m) =>
-              m.fecha.year == hoy.year &&
-              m.fecha.month == hoy.month &&
-              m.fecha.day == hoy.day,
-        );
-      }
-
-      final listaFinal = iterador.toList()
+      final lista = rawMov
+          .map((e) {
+            final m = MovimientoResumen.fromJson(e);
+            final mat = matMap[m.materialId];
+            return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
+          })
+          .where((m) {
+            if (!soloHoy) return true; // Sin filtro → todo el historial
+            return m.fecha.year == hoy.year &&
+                m.fecha.month == hoy.month &&
+                m.fecha.day == hoy.day;
+          })
+          .toList()
         ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
 
       return {
-        'movimientos': listaFinal,
+        'movimientos': lista,
         'totalMateriales': matMap.length,
-        'entradasHoy': listaFinal.where((m) => m.tipoMovimiento == 'ENTRADA').length,
-        'salidasHoy': listaFinal.where((m) => m.tipoMovimiento == 'SALIDA').length,
+        'entradasHoy': lista.where((m) => m.tipoMovimiento == 'ENTRADA').length,
+        'salidasHoy': lista.where((m) => m.tipoMovimiento == 'SALIDA').length,
       };
     } catch (e) {
       debugPrint('DEBUG: Error en MovimientoService: $e');
       rethrow;
+    }
+  }
+
+  /// Actualizar un movimiento existente — PUT /movimientos/{id}
+  Future<bool> actualizarMovimiento(int id, Map<String, dynamic> data) async {
+    try {
+      final headers = await AuthHeader.getHeaders();
+      final res = await http.put(
+        Uri.parse('${ApiConfig.movimientos}/$id'),
+        headers: headers,
+        body: jsonEncode(data),
+      );
+
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return false;
+      }
+
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('DEBUG: Error al actualizar movimiento: $e');
+      return false;
     }
   }
 }
