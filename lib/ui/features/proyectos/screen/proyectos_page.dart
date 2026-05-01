@@ -1,5 +1,6 @@
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:flutter/material.dart';
 
@@ -12,9 +13,11 @@ class ProyectosPage extends StatefulWidget {
 
 class _ProyectosPageState extends State<ProyectosPage> {
   final ProyectoService _service = ProyectoService();
+  final TextEditingController _searchCtrl = TextEditingController();
   bool cargando = true;
   String? error;
   List<Proyecto> proyectos = [];
+  List<Proyecto> filtrados = [];
 
   @override
   void initState() {
@@ -29,21 +32,64 @@ class _ProyectosPageState extends State<ProyectosPage> {
     });
     try {
       proyectos = await _service.obtenerProyectos();
+      filtrados = proyectos;
     } catch (e) {
       error = e.toString();
     }
     setState(() => cargando = false);
   }
 
+  void _filtrar(String texto) {
+    texto = texto.toLowerCase();
+    setState(() {
+      filtrados = proyectos.where((p) {
+        return p.nombre.toLowerCase().contains(texto) ||
+            p.estado.toLowerCase().contains(texto);
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Lista de Proyectos"),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  "Lista de Proyectos",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: _filtrar,
+                decoration: InputDecoration(
+                  hintText: "Buscar proyecto...",
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF4CAF50),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(child: _buildBody()),
+            ],
+          ),
+        ),
       ),
-      body: Padding(padding: const EdgeInsets.all(16), child: _buildBody()),
     );
   }
 
@@ -74,21 +120,20 @@ class _ProyectosPageState extends State<ProyectosPage> {
         ),
       );
     }
+    if (filtrados.isEmpty) {
+      return const Center(
+        child: Text(
+          "No hay coincidencias",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
     return ListView.separated(
-      itemCount: proyectos.length,
+      itemCount: filtrados.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
-        final p = proyectos[i];
-        return ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          tileColor: Colors.white,
-          title: Text(
-            p.nombre,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text("Estado: ${p.estado}\nCreado: ${p.fechaCreacion}"),
+        final p = filtrados[i];
+        return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
@@ -97,6 +142,7 @@ class _ProyectosPageState extends State<ProyectosPage> {
               ),
             );
           },
+          child: ProyectoCard(proyecto: p),
         );
       },
     );
