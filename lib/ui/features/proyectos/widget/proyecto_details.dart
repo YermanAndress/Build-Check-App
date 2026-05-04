@@ -1,5 +1,6 @@
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/editar_proyecto_page.dart';
 import 'package:flutter/material.dart';
 
 class ProyectoDetails extends StatefulWidget {
@@ -45,6 +46,19 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         title: Text(proyecto?.nombre ?? "Detalle del Proyecto"),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit, color: Color(0xFF4CAF50)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditarProyectoPage(proyecto: proyecto!),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(padding: const EdgeInsets.all(16), child: _buildBody()),
     );

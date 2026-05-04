@@ -28,4 +28,16 @@ class Proyecto {
       fechaCreacion: json['fechaCreacion'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "nombre": nombre,
+      "descripcion": descripcion,
+      "ubicacion": ubicacion,
+      "presupuesto": presupuesto,
+      "estado": estado,
+      "fechaCreacion": fechaCreacion,
+    };
+  }
 }

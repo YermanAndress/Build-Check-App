@@ -1,5 +1,6 @@
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,16 @@ class _ProyectosPageState extends State<ProyectosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF4CAF50),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CrearProyectoPage()),
+          );
+        },
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

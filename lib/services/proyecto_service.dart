@@ -33,4 +33,33 @@ class ProyectoService {
     }
     throw Exception("Error al cargar proyecto: ${res.statusCode}");
   }
+
+  Future<bool> crearProyecto(Proyecto proyecto) async {
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.post(
+      Uri.parse(ApiConfig.proyectos),
+      headers: headers,
+      body: jsonEncode(proyecto.toJson()),
+    );
+    return res.statusCode == 200 || res.statusCode == 201;
+  }
+
+  Future<bool> actualizarProyecto(Proyecto proyecto) async {
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.put(
+      Uri.parse("${ApiConfig.proyectos}/${proyecto.id}"),
+      headers: headers,
+      body: jsonEncode(proyecto.toJson()),
+    );
+    return res.statusCode == 200;
+  }
+
+  Future<bool> eliminarProyecto(int id) async {
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.delete(
+      Uri.parse("${ApiConfig.proyectos}/$id"),
+      headers: headers,
+    );
+    return res.statusCode == 200;
+  }
 }
