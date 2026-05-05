@@ -10,6 +10,7 @@ class SearchableList<T> extends StatefulWidget {
   final String emptyMessage; // mensaje cuando la lista está vacía
   final String
   noResultsMessage; // mensaje cuando la búsqueda no arroja resultados
+  final Widget? floatingActionButton; // botón flotante opcional
 
   const SearchableList({
     super.key,
@@ -20,6 +21,7 @@ class SearchableList<T> extends StatefulWidget {
     required this.hintText,
     this.emptyMessage = "No hay registros aún",
     this.noResultsMessage = "No se encontraron resultados",
+    this.floatingActionButton,
   });
 
   @override
@@ -125,6 +127,7 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
               itemBuilder: (context, index) =>
                   widget.itemBuilder(_filteredItems[index]),
             ),
+      floatingActionButton: widget.floatingActionButton,
     );
   }
 }
