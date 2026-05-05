@@ -29,6 +29,8 @@ class Proyecto {
     );
   }
 
+  DateTime get fechaCreacionDate => DateTime.parse(fechaCreacion);
+
   Map<String, dynamic> toJson() {
     return {
       "id": id,

@@ -16,8 +16,11 @@ class _EditarProyectoPageState extends State<EditarProyectoPage> {
   late TextEditingController _descripcionCtrl;
   late TextEditingController _ubicacionCtrl;
   late TextEditingController _presupuestoCTrl;
+  late TextEditingController _estadoCtrl;
 
   bool enviando = false;
+
+  final List<String> estados = ["Planificacion", "Ejecucion", "Terminado"];
 
   @override
   void initState() {
@@ -28,6 +31,7 @@ class _EditarProyectoPageState extends State<EditarProyectoPage> {
     _presupuestoCTrl = TextEditingController(
       text: widget.proyecto.presupuesto.toString(),
     );
+    _estadoCtrl = TextEditingController(text: widget.proyecto.estado);
   }
 
   @override
@@ -38,42 +42,135 @@ class _EditarProyectoPageState extends State<EditarProyectoPage> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nombreCtrl,
-                decoration: const InputDecoration(labelText: "Nombre"),
-                validator: (v) => v!.isEmpty ? "Requerido" : null,
-              ),
-              TextFormField(
-                controller: _descripcionCtrl,
-                decoration: const InputDecoration(labelText: "Descripcion"),
-              ),
-              TextFormField(
-                controller: _ubicacionCtrl,
-                decoration: const InputDecoration(labelText: "Ubicacion"),
-                validator: (v) => v!.isEmpty ? "Requerido" : null,
-              ),
-              TextFormField(
-                controller: _presupuestoCTrl,
-                decoration: const InputDecoration(labelText: "Presupuesto"),
-                keyboardType: TextInputType.number,
-                validator: (v) => v!.isEmpty ? "Requerido" : null,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4CAF50),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                    ),
+                  ],
                 ),
-                onPressed: enviando ? null : _guardar,
-                child: const Text("Guardar Cambios"),
+                child: const Icon(
+                  Icons.apartment_rounded,
+                  size: 50,
+                  color: Color(0xFF4CAF50),
+                ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 30),
+
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nombreCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Nombre",
+                      prefixIcon: Icon(Icons.title, color: Colors.blueGrey),
+                    ),
+                    validator: (v) => v!.isEmpty ? "Requerido" : null,
+                  ),
+                  TextFormField(
+                    controller: _descripcionCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Descripcion",
+                      prefixIcon: Icon(
+                        Icons.description_outlined,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                  ),
+                  TextFormField(
+                    controller: _ubicacionCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Ubicacion",
+                      prefixIcon: Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                    validator: (v) => v!.isEmpty ? "Requerido" : null,
+                  ),
+                  TextFormField(
+                    controller: _presupuestoCTrl,
+                    decoration: const InputDecoration(
+                      labelText: "Presupuesto",
+                      prefixIcon: Icon(
+                        Icons.attach_money,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? "Requerido" : null,
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: _estadoCtrl.text,
+                    decoration: const InputDecoration(
+                      labelText: "Estado",
+                      prefixIcon: Icon(
+                        Icons.flag_outlined,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: "Planificacion",
+                        child: Text("Planificacion"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Ejecucion",
+                        child: Text("Ejecucion"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Terminado",
+                        child: Text("Terminado"),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _estadoCtrl.text = value!);
+                    },
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Requerido" : null,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: enviando ? null : _guardar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: enviando
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "Guardar Cambios",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -89,7 +186,7 @@ class _EditarProyectoPageState extends State<EditarProyectoPage> {
       descripcion: _descripcionCtrl.text,
       ubicacion: _ubicacionCtrl.text,
       presupuesto: double.parse(_presupuestoCTrl.text),
-      estado: widget.proyecto.estado,
+      estado: _estadoCtrl.text,
       fechaCreacion: widget.proyecto.fechaCreacion,
     );
     final ok = await service.actualizarProyecto(actualizado);
