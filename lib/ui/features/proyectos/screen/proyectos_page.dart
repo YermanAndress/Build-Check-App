@@ -33,7 +33,11 @@ class _ProyectosPageState extends State<ProyectosPage> {
     });
     try {
       proyectos = await _service.obtenerProyectos();
-      filtrados = proyectos;
+      if (_searchCtrl.text.isNotEmpty) {
+        _filtrar(_searchCtrl.text);
+      } else {
+        filtrados = proyectos;
+      }
     } catch (e) {
       error = e.toString();
     }
@@ -60,8 +64,12 @@ class _ProyectosPageState extends State<ProyectosPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CrearProyectoPage()),
-          );
+            MaterialPageRoute(builder: (_) => const CrearProyectoPage()),
+          ).then((value) {
+            if (value == true) {
+              _cargar();
+            }
+          });
         },
       ),
       body: SafeArea(
@@ -149,9 +157,13 @@ class _ProyectosPageState extends State<ProyectosPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ProyectoDetails(proyectoId: p.id),
+                builder: (_) => ProyectoDetails(proyectoId: p.id!),
               ),
-            );
+            ).then((value) {
+              if (value == true) {
+                _cargar();
+              }
+            });
           },
           child: ProyectoCard(proyecto: p),
         );

@@ -15,7 +15,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
   final _descripcionCtrl = TextEditingController();
   final _ubicacionCtrl = TextEditingController();
   final _presupuestoCtrl = TextEditingController();
-  final _estadoCtrl = TextEditingController();
+  String _estadoSeleccionado = "Planificacion";
 
   bool enviando = false;
 
@@ -99,7 +99,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                     validator: (v) => v!.isEmpty ? "Requerido" : null,
                   ),
                   DropdownButtonFormField<String>(
-                    value: _estadoCtrl.text,
+                    value: _estadoSeleccionado,
                     decoration: const InputDecoration(
                       labelText: "Estado",
                       prefixIcon: Icon(
@@ -122,7 +122,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                       ),
                     ],
                     onChanged: (value) {
-                      setState(() => _estadoCtrl.text = value!);
+                      setState(() => _estadoSeleccionado = value!);
                     },
                     validator: (v) =>
                         v == null || v.isEmpty ? "Requerido" : null,
@@ -167,12 +167,12 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
     setState(() => enviando = true);
     final service = ProyectoService();
     final proyecto = Proyecto(
-      id: 0,
+      id: null,
       nombre: _nombreCtrl.text,
       descripcion: _descripcionCtrl.text,
       ubicacion: _ubicacionCtrl.text,
       presupuesto: double.parse(_presupuestoCtrl.text),
-      estado: _estadoCtrl.text,
+      estado: _estadoSeleccionado,
       fechaCreacion: "",
     );
     final ok = await service.crearProyecto(proyecto);

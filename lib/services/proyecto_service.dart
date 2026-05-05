@@ -60,6 +60,8 @@ class ProyectoService {
       Uri.parse("${ApiConfig.proyectos}/$id"),
       headers: headers,
     );
-    return res.statusCode == 200;
+    return res.statusCode == 200 ||
+        res.statusCode == 202 ||
+        res.statusCode == 204;
   }
 }

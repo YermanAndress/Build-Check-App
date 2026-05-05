@@ -50,20 +50,30 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         elevation: 0,
         actions: [
           if (proyecto != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditarProyectoPage(proyecto: proyecto!),
-                  ),
-                ).then((value) {
-                  if (value == true) {
-                    _cargar();
-                  }
-                });
-              },
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditarProyectoPage(proyecto: proyecto!),
+                      ),
+                    ).then((value) {
+                      if (value == true) {
+                        _cargar();
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: _confirmarEliminar,
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
         ],
       ),
@@ -181,6 +191,30 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
           ],
         ),
       ],
+    );
+  }
+
+  void _confirmarEliminar() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Eliminar Proyecto"),
+        content: const Text("¿Seguro que deseas eliminar este proyecto?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final ok = await _service.eliminarProyecto(widget.proyectoId);
+              Navigator.pop(context, true);
+            },
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 }

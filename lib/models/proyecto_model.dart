@@ -1,5 +1,5 @@
 class Proyecto {
-  final int id;
+  final int? id;
   final String nombre;
   final String descripcion;
   final String ubicacion;

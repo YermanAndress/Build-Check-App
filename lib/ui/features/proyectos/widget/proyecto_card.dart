@@ -18,7 +18,7 @@ class ProyectoCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProyectoDetails(proyectoId: proyecto.id),
+            builder: (_) => ProyectoDetails(proyectoId: proyecto.id!),
           ),
         );
       },
@@ -37,7 +37,7 @@ class ProyectoCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "Estadp: ${proyecto.estado}",
+            "Estado: ${proyecto.estado}",
             style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
           ),
         ],
