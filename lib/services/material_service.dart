@@ -3,11 +3,12 @@ import 'dart:typed_data';
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/services/http_handler.dart';
+import 'package:build_check_app/services/http_interceptor.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/models/material_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MaterialService {
   static Map<int, MaterialItem>? _cacheMapaMateriales;
@@ -15,15 +16,19 @@ class MaterialService {
 
   // Obtener alertas de stock bajo
   Future<List<AlertaMaterial>> obtenerAlertas() async {
-    final headers = await AuthHeader.getHeaders();
-    final res = await http.get(Uri.parse(ApiConfig.alertas), headers: headers);
+    final res = await HttpInterceptor.send(() async {
+      return http.get(
+        Uri.parse(ApiConfig.alertas),
+        headers: await AuthHeader.getHeaders(),
+      );
+    });
     if (res.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
       return [];
     }
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-      List raw = (decoded is List)
+      final List raw = decoded is List
           ? decoded
           : (decoded['alertas'] ?? [decoded]);
       return raw.map((e) => AlertaMaterial.fromJson(e)).toList();
@@ -40,17 +45,17 @@ class MaterialService {
       final diferencia = DateTime.now().difference(_ultimaCarga!);
       if (diferencia.inMinutes < 5) return _cacheMapaMateriales!;
     }
-    final headers = await AuthHeader.getHeaders();
-    final res = await http.get(
-      Uri.parse(ApiConfig.materiales),
-      headers: headers,
-    );
-    final Map<int, MaterialItem> nuevoMapa = {};
-
+    final res = await HttpInterceptor.send(() async {
+      return http.get(
+        Uri.parse(ApiConfig.materiales),
+        headers: await AuthHeader.getHeaders(),
+      );
+    });
     if (res.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
       return {};
     }
+    final Map<int, MaterialItem> nuevoMapa = {};
 
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
@@ -69,12 +74,13 @@ class MaterialService {
 
   // Registrar un nuevo movimiento
   Future<bool> registrarMovimiento(Map<String, dynamic> data) async {
-    final headers = await AuthHeader.getHeaders();
-    final res = await http.post(
-      Uri.parse(ApiConfig.movimientos),
-      headers: headers,
-      body: jsonEncode(data),
-    );
+    final res = await HttpInterceptor.send(() async {
+      return http.post(
+        Uri.parse(ApiConfig.movimientos),
+        headers: await AuthHeader.getHeaders(),
+        body: jsonEncode(data),
+      );
+    });
 
     if (res.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
@@ -88,28 +94,35 @@ class MaterialService {
     Map<String, String> fields,
     Uint8List? imageBytes,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
-    var request = http.MultipartRequest('POST', Uri.parse(ApiConfig.facturas));
-    request.fields.addAll(fields);
-    request.headers["Authorization"] = "Bearer $token";
-
-    if (imageBytes != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file', // Este nombre debe coincidir con el nodo "Binary Property" en n8n
-          imageBytes,
-          filename: 'factura_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        ),
+    try {
+      final token = await SecureStorage.read("accessToken");
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiConfig.facturas),
       );
-    }
+      request.headers["Authorization"] = "Bearer $token";
+      request.fields.addAll(fields);
 
-    final streamedRes = await request.send();
-    if (streamedRes.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      if (imageBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file', // Este nombre debe coincidir con el nodo "Binary Property" en n8n
+            imageBytes,
+            filename: 'factura_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        );
+      }
+
+      final streamedRes = await request.send();
+      final res = await http.Response.fromStream(streamedRes);
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return false;
+      }
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
       return false;
     }
-    return streamedRes.statusCode == 200 || streamedRes.statusCode == 201;
   }
 
   Future<MaterialItem?> crearMaterial(
@@ -118,17 +131,18 @@ class MaterialService {
     double precio,
     double stock,
   ) async {
-    final headers = await AuthHeader.getHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConfig.materiales),
-      headers: headers,
-      body: jsonEncode({
-        'nombre': nombre,
-        'unidadMedida': unidad,
-        'precioUnitario': precio,
-        'stockActual': stock,
-      }),
-    );
+    final response = await HttpInterceptor.send(() async {
+      return http.post(
+        Uri.parse(ApiConfig.materiales),
+        headers: await AuthHeader.getHeaders(),
+        body: jsonEncode({
+          'nombre': nombre,
+          'unidadMedida': unidad,
+          'precioUnitario': precio,
+          'stockActual': stock,
+        }),
+      );
+    });
 
     if (response.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);

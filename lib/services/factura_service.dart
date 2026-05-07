@@ -1,21 +1,23 @@
 import 'dart:convert';
 import 'package:build_check_app/services/auth_header.dart';
+import 'package:build_check_app/services/http_interceptor.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/models/factura_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class FacturaService {
   Future<bool> registrarFacturaManual(Factura factura) async {
     try {
-      final headers = await AuthHeader.getHeaders();
-      final response = await http.post(
-        Uri.parse(ApiConfig.facturas),
-        headers: headers,
-        body: jsonEncode(factura.toJson()),
-      );
+      final response = await HttpInterceptor.send(() async {
+        return http.post(
+          Uri.parse(ApiConfig.facturas),
+          headers: await AuthHeader.getHeaders(),
+          body: jsonEncode(factura.toJson()),
+        );
+      });
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint("Error en FacturaService (Manual): $e");
@@ -29,8 +31,7 @@ class FacturaService {
     required int proyectoId,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString("token");
+      final token = await SecureStorage.read("accessToken");
       var request = http.MultipartRequest(
         'POST',
         Uri.parse(ApiConfig.facturas),
@@ -63,11 +64,12 @@ class FacturaService {
 
   Future<List<Factura>> obtenerFacturas() async {
     try {
-      final headers = await AuthHeader.getHeaders();
-      final response = await http.get(
-        Uri.parse(ApiConfig.facturas),
-        headers: headers,
-      );
+      final response = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.facturas),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
 
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);

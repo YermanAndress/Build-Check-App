@@ -1,12 +1,9 @@
 import 'dart:convert';
 
-import 'package:build_check_app/core/api_config.dart';
-import 'package:build_check_app/services/rsa_service.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../widget/login_items.dart';
 import '../../../../services/login_service.dart';
 import '../../../main_screen.dart';
@@ -34,9 +31,9 @@ class _LoginpageState extends State<Loginpage> {
         passwordController.text.trim(),
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString("token", data["token"]);
-      prefs.setString("usuario", jsonEncode(data["usuario"]));
+      await SecureStorage.save("accessToken", data['accessToken']);
+      await SecureStorage.save("refreshToken", data['refreshToken']);
+      await SecureStorage.save("usuario", jsonEncode(data['usuario']));
       await Future.delayed(const Duration(milliseconds: 200));
 
       Navigator.pushReplacement(
