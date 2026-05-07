@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:flutter/material.dart';
 
@@ -15,7 +16,6 @@ import 'package:build_check_app/services/material_service.dart';
 
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -97,6 +97,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'ENTRADA'),
     ).then((_) async {
+      MaterialService.invalidateCache();
       await _cargarStatsHoy();
       await _materialService.obtenerAlertas();
     });
@@ -109,6 +110,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'SALIDA'),
     ).then((_) async {
+      MaterialService.invalidateCache();
       await _cargarStatsHoy();
       await _materialService
           .obtenerAlertas(); // refrescar stock bajo tras una salida
@@ -154,9 +156,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             onSelected: (value) async {
               if (value == 'logout') {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove("token");
-                await prefs.remove("usuario");
+                await SecureStorage.clear();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const Loginpage()),
@@ -167,14 +167,12 @@ class _DashboardPageState extends State<DashboardPage> {
               return [
                 PopupMenuItem(
                   enabled: false,
-                  child: FutureBuilder(
-                    future: SharedPreferences.getInstance(),
+                  child: FutureBuilder<String?>(
+                    future: SecureStorage.read("usuario"),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox();
-                      final prefs = snapshot.data!;
-                      final usuarioJson = prefs.getString("usuario");
-                      if (usuarioJson == null) return const SizedBox();
-                      final usuario = jsonDecode(usuarioJson);
+                      if (!snapshot.hasData || snapshot.data == null)
+                        return const SizedBox();
+                      final usuario = jsonDecode(snapshot.data!);
                       final nombre = usuario["nombre"] ?? "Usuario";
                       return Text(
                         "Hola, $nombre",

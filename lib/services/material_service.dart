@@ -155,4 +155,9 @@ class MaterialService {
     }
     return null;
   }
+
+  static void invalidateCache() {
+    _cacheMapaMateriales = null;
+    _ultimaCarga = null;
+  }
 }
