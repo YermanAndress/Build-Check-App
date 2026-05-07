@@ -15,9 +15,15 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
   final _descripcionCtrl = TextEditingController();
   final _ubicacionCtrl = TextEditingController();
   final _presupuestoCtrl = TextEditingController();
-  String _estadoSeleccionado = "Planificacion";
+  String _estadoSeleccionado = "PENDIENTE";
 
   bool enviando = false;
+
+  static const List<String> estadosDisponibles = [
+    "PENDIENTE",
+    "EN_PROGRESO",
+    "COMPLETADO",
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -98,35 +104,33 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                     keyboardType: TextInputType.number,
                     validator: (v) => v!.isEmpty ? "Requerido" : null,
                   ),
-                  DropdownButtonFormField<String>(
-                    value: _estadoSeleccionado,
-                    decoration: const InputDecoration(
-                      labelText: "Estado",
-                      prefixIcon: Icon(
-                        Icons.flag_outlined,
-                        color: Colors.blueGrey,
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: "Planificacion",
-                        child: Text("Planificacion"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Ejecucion",
-                        child: Text("Ejecucion"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Terminado",
-                        child: Text("Terminado"),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _estadoSeleccionado = value!);
-                    },
-                    validator: (v) =>
-                        v == null || v.isEmpty ? "Requerido" : null,
-                  ),
+                   DropdownButtonFormField<String>(
+                     value: _estadoSeleccionado,
+                     decoration: const InputDecoration(
+                       labelText: "Estado",
+                       prefixIcon: Icon(
+                         Icons.flag_outlined,
+                         color: Colors.blueGrey,
+                       ),
+                     ),
+                     items: estadosDisponibles
+                         .map((e) => DropdownMenuItem(
+                               value: e,
+                               child: Text(
+                                 e == "PENDIENTE"
+                                     ? "Pendiente"
+                                     : e == "EN_PROGRESO"
+                                         ? "En Progreso"
+                                         : "Completado",
+                               ),
+                             ))
+                         .toList(),
+                     onChanged: (value) {
+                       setState(() => _estadoSeleccionado = value!);
+                     },
+                     validator: (v) =>
+                         v == null || v.isEmpty ? "Requerido" : null,
+                   ),
                 ],
               ),
             ),
