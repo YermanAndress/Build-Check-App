@@ -5,6 +5,7 @@ import 'features/proyectos/screen/proyectos_page.dart';
 import 'features/facturas/screen/facturas_page.dart';
 import 'features/movimientos/screen/movimientos_page.dart';
 import 'features/materiales/screen/materiales_page.dart';
+import 'features/jwt_evidence/screen/jwt_evidence_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -28,6 +29,23 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _builders[_selectedIndex](),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const JwtEvidencePage()),
+          );
+        },
+        backgroundColor: const Color(0xFF7C4DFF),
+        icon: const Icon(Icons.token, color: Colors.white),
+        label: const Text(
+          'JWT',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
