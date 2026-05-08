@@ -79,7 +79,7 @@ class FacturaMaterialItem {
   factory FacturaMaterialItem.fromJson(Map<String, dynamic> json) {
     return FacturaMaterialItem(
       materialId: json['materialId'] ?? 0,
-      nombre: json['nombre'] ?? 'Sin nombre',
+      nombre: json['nombreMaterial'] ?? json['nombre'] ?? 'Sin nombre',
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0.0,
       precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
       unidadMedida: UnidadMedida.values.byName(

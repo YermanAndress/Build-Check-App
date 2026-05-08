@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
+import 'package:build_check_app/services/http_handler.dart';
+import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -72,11 +75,16 @@ class MovimientoSheetState extends State<MovimientoSheet> {
 
   Future<void> _cargarMateriales() async {
     try {
-      final headers = await AuthHeader.getHeaders();
-      final res = await http.get(
-        Uri.parse(ApiConfig.materiales),
-        headers: headers,
-      );
+      final res = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.materiales),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return;
+      }
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -118,14 +126,19 @@ class MovimientoSheetState extends State<MovimientoSheet> {
     });
 
     try {
-      final headers = await AuthHeader.getHeaders();
-      final res = await http.post(
-        Uri.parse(ApiConfig.movimientos),
-        headers: headers,
-        body: body,
-      );
+      final res = await HttpInterceptor.send(() async {
+        return http.post(
+          Uri.parse(ApiConfig.movimientos),
+          headers: await AuthHeader.getHeaders(),
+          body: body,
+        );
+      });
       if (!mounted) return;
 
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return;
+      }
       if (res.statusCode == 200 || res.statusCode == 201) {
         Navigator.pop(context, true);
       } else {

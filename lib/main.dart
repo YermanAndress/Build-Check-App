@@ -1,8 +1,8 @@
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'ui/main_screen.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
@@ -39,12 +39,15 @@ class BuildCheckApp extends StatelessWidget {
       ),
 
       //Develop
-      home: FutureBuilder(
-        future: SharedPreferences.getInstance(),
+      home: FutureBuilder<String?>(
+        future: SecureStorage.read("accessToken"),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const SizedBox();
-          final prefs = snapshot.data!;
-          final token = prefs.getString("token");
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final token = snapshot.data;
           if (token == null) {
             return const Loginpage();
           } else {

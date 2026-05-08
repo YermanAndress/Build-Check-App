@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/services/http_handler.dart';
+import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -12,18 +13,20 @@ import 'package:build_check_app/models/movimiento_model.dart';
 class MovimientoService {
   /// [soloHoy] = true  → filtra solo movimientos del día actual (comportamiento original)
   /// [soloHoy] = false → devuelve todo el historial
-  Future<Map<String, dynamic>> obtenerStatsHoy({
-    bool soloHoy = true,
-  }) async {
+  Future<Map<String, dynamic>> obtenerStatsHoy({bool soloHoy = true}) async {
     try {
-      final headers = await AuthHeader.getHeaders();
-      final responses = await Future.wait([
-        http.get(Uri.parse(ApiConfig.movimientos), headers: headers),
-        http.get(Uri.parse(ApiConfig.materiales), headers: headers),
-      ]);
-
-      final resMov = responses[0];
-      final resMat = responses[1];
+      final resMov = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.movimientos),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
+      final resMat = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.materiales),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
 
       if (resMov.statusCode == 401 || resMat.statusCode == 401) {
         await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
@@ -54,20 +57,23 @@ class MovimientoService {
       final rawMov = normalizar(decodedMov, 'movimientos');
       final hoy = DateTime.now();
 
-      final lista = rawMov
-          .map((e) {
-            final m = MovimientoResumen.fromJson(e);
-            final mat = matMap[m.materialId];
-            return mat != null ? m.conMaterial(mat.nombre, mat.unidadMedida) : m;
-          })
-          .where((m) {
-            if (!soloHoy) return true; // Sin filtro → todo el historial
-            return m.fecha.year == hoy.year &&
-                m.fecha.month == hoy.month &&
-                m.fecha.day == hoy.day;
-          })
-          .toList()
-        ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+      final lista =
+          rawMov
+              .map((e) {
+                final m = MovimientoResumen.fromJson(e);
+                final mat = matMap[m.materialId];
+                return mat != null
+                    ? m.conMaterial(mat.nombre, mat.unidadMedida)
+                    : m;
+              })
+              .where((m) {
+                if (!soloHoy) return true; // Sin filtro → todo el historial
+                return m.fecha.year == hoy.year &&
+                    m.fecha.month == hoy.month &&
+                    m.fecha.day == hoy.day;
+              })
+              .toList()
+            ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
 
       return {
         'movimientos': lista,
@@ -84,12 +90,13 @@ class MovimientoService {
   /// Actualizar un movimiento existente — PUT /movimientos/{id}
   Future<bool> actualizarMovimiento(int id, Map<String, dynamic> data) async {
     try {
-      final headers = await AuthHeader.getHeaders();
-      final res = await http.put(
-        Uri.parse('${ApiConfig.movimientos}/$id'),
-        headers: headers,
-        body: jsonEncode(data),
-      );
+      final res = await HttpInterceptor.send(() async {
+        return http.put(
+          Uri.parse('${ApiConfig.movimientos}/$id'),
+          headers: await AuthHeader.getHeaders(),
+          body: jsonEncode(data),
+        );
+      });
 
       if (res.statusCode == 401) {
         await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);

@@ -16,18 +16,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _paginas = [
-    const DashboardPage(),
-    const ProyectosPage(),
-    const MaterialesPage(),
-    const MovimientosPage(),
-    const FacturasPage(),
+  final List<Widget Function()> _builders = [
+    () => DashboardPage(),
+    () => ProyectosPage(),
+    () => MaterialesPage(),
+    () => MovimientosPage(),
+    () => FacturasPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _paginas),
+      body: _builders[_selectedIndex](),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
