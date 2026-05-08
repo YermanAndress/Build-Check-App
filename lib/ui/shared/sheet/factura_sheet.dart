@@ -8,6 +8,7 @@ import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/services/material_service.dart';
 import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
 import 'package:build_check_app/enum/unidad_medida.dart';
+import 'package:build_check_app/ui/shared/sheet/factura_ocr_review_sheet.dart' as build_check_app_ocr_review;
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -360,6 +361,38 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 enviando: _enviando,
                 label: 'REGISTRAR FACTURA',
                 onTap: _enviar,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    // Botón de prueba para simular datos devueltos por IA
+                    final facturaExtraida = Factura(
+                      proyectoId: 1,
+                      proveedor: 'Ferretería El Constructor (Leído por IA)',
+                      numeroFactura: 'FAC-88392',
+                      fecha: DateTime.now().subtract(const Duration(days: 1)),
+                      valorTotal: 1545000.0,
+                      observaciones: 'Extraído vía OCR',
+                    );
+
+                    Navigator.pop(context); // Cierra el sheet actual
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => build_check_app_ocr_review.FacturaOcrReviewSheet(
+                        facturaExtraida: facturaExtraida,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.science, color: Colors.orange),
+                  label: const Text(
+                    "Simular Respuesta de IA (Test)",
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ),
               ),
             ] else ...[
               Form(
