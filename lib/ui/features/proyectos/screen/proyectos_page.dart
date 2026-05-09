@@ -1,5 +1,6 @@
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
@@ -19,11 +20,18 @@ class _ProyectosPageState extends State<ProyectosPage> {
   String? error;
   List<Proyecto> proyectos = [];
   List<Proyecto> filtrados = [];
+  bool _puedeCrear = false;
 
   @override
   void initState() {
     super.initState();
     _cargar();
+    _cargarPermiso();
+  }
+
+  Future<void> _cargarPermiso() async {
+    final puede = await RoleHelper.puedeGestionarProyectos();
+    if (mounted) setState(() => _puedeCrear = puede);
   }
 
   Future<void> _cargar() async {
@@ -58,20 +66,22 @@ class _ProyectosPageState extends State<ProyectosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF4CAF50),
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CrearProyectoPage()),
-          ).then((value) {
-            if (value == true) {
-              _cargar();
-            }
-          });
-        },
-      ),
+      floatingActionButton: _puedeCrear
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF4CAF50),
+              child: const Icon(Icons.add, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CrearProyectoPage()),
+                ).then((value) {
+                  if (value == true) {
+                    _cargar();
+                  }
+                });
+              },
+            )
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

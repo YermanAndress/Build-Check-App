@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:flutter/material.dart';
@@ -37,19 +38,32 @@ class _DashboardPageState extends State<DashboardPage> {
   List<AlertaMaterial> alertas = [];
   bool cargandoAlertas = true;
 
+  bool _puedeRegistrar = false;
+  bool _puedeFacturas = false;
+
   @override
   void initState() {
     super.initState();
     _cargarStatsHoy();
-    Future.microtask(() async {
-      await _materialService.obtenerAlertas();
-    });
+    _cargarPermisos();
+  }
+
+  Future<void> _cargarPermisos() async {
+    final registrar = await RoleHelper.puedeRegistrarMovimientos();
+    final facturas = await RoleHelper.puedeGestionarFacturas();
+    if (mounted) {
+      setState(() {
+        _puedeRegistrar = registrar;
+        _puedeFacturas = facturas;
+      });
+    }
   }
 
   final MovimientoService _movimientoService = MovimientoService();
   final MaterialService _materialService = MaterialService();
 
   Future<void> _cargarStatsHoy() async {
+    if (!mounted) return;
     setState(() {
       _cargandoStats = true;
       cargandoAlertas = true;
@@ -58,7 +72,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       final stats = await _movimientoService.obtenerStatsHoy();
+      if (!mounted) return;
       final listaAlertas = await _materialService.obtenerAlertas();
+      if (!mounted) return;
 
       setState(() {
         _movimientosHoy = stats['movimientos'];
@@ -72,6 +88,7 @@ class _DashboardPageState extends State<DashboardPage> {
         cargandoAlertas = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMovimientos = e.toString();
         _cargandoStats = false;
@@ -97,6 +114,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'ENTRADA'),
     ).then((_) async {
+      if (!mounted) return;
       MaterialService.invalidateCache();
       await _cargarStatsHoy();
       await _materialService.obtenerAlertas();
@@ -110,6 +128,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => const MovimientoSheet(tipo: 'SALIDA'),
     ).then((_) async {
+      if (!mounted) return;
       MaterialService.invalidateCache();
       await _cargarStatsHoy();
       await _materialService
@@ -124,6 +143,13 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => FacturaSheet(),
     );
+  }
+
+  Future<String?> rolUsuario() async {
+    final usuarioJson = await SecureStorage.read("usuario");
+    if (usuarioJson == null) return null;
+    final usuario = jsonDecode(usuarioJson);
+    return usuario["rol"];
   }
 
   @override
@@ -267,56 +293,63 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ],
             ),
-
-            const SizedBox(height: 22),
-
-            // ── Acciones rápidas ──
-            const Text(
-              'Acciones rápidas',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
+            if (_puedeRegistrar || _puedeFacturas) ...[
+              const SizedBox(height: 22),
+              // ── Acciones rápidas ──
+              const Text(
+                'Acciones rápidas',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: QuickActionButton(
-                      label: 'Registrar\nEntrada',
-                      icon: Icons.arrow_downward_rounded,
-                      iconBgColor: const Color.fromARGB(255, 191, 230, 196),
-                      iconColor: const Color(0xFF4CAF50),
-                      onTap: _abrirRegistrarEntrada,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      label: 'Registrar\nSalida',
-                      icon: Icons.arrow_upward_rounded,
-                      iconBgColor: const Color(0xFFF8BBD0),
-                      iconColor: const Color(0xFFE91E63),
-                      onTap: _abrirRegistrarSalida,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      label: 'Escanear\nFactura',
-                      icon: Icons.camera_alt_outlined,
-                      iconBgColor: const Color(0xFFE0E0E0),
-                      iconColor: const Color(0xFF757575),
-                      onTap: _abrirEscanearFactura,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (_puedeRegistrar) ...[
+                      Expanded(
+                        child: QuickActionButton(
+                          label: 'Registrar\nEntrada',
+                          icon: Icons.arrow_downward_rounded,
+                          iconBgColor: const Color.fromARGB(255, 191, 230, 196),
+                          iconColor: const Color(0xFF4CAF50),
+                          onTap: _abrirRegistrarEntrada,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          label: 'Registrar\nSalida',
+                          icon: Icons.arrow_upward_rounded,
+                          iconBgColor: const Color(0xFFF8BBD0),
+                          iconColor: const Color(0xFFE91E63),
+                          onTap: _abrirRegistrarSalida,
+                        ),
+                      ),
+                    ],
+                    if (_puedeRegistrar && _puedeFacturas)
+                      const SizedBox(width: 16),
+                    if (_puedeFacturas)
+                      Expanded(
+                        child: QuickActionButton(
+                          label: 'Escanear\nFactura',
+                          icon: Icons.camera_alt_outlined,
+                          iconBgColor: const Color(0xFFE0E0E0),
+                          iconColor: const Color(0xFF757575),
+                          onTap: _abrirEscanearFactura,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
 
             // ── Movimientos recientes ──
             const SizedBox(height: 22),
