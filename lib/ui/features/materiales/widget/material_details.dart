@@ -1,3 +1,4 @@
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/models/material_model.dart';
@@ -15,12 +16,19 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   late TextEditingController _nombreCtrl;
   late TextEditingController _unidadCtrl;
   bool _isSaving = false;
+  bool _puedeEditar = false;
 
   @override
   void initState() {
     super.initState();
     _nombreCtrl = TextEditingController(text: widget.material.nombre);
     _unidadCtrl = TextEditingController(text: widget.material.unidadMedida);
+    _cargarPermiso();
+  }
+
+  Future<void> _cargarPermiso() async {
+    final puede = await RoleHelper.puedeGestionarMateriales();
+    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   Future<void> _guardarCambios() async {
@@ -47,10 +55,11 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar Material' : 'Detalle del Material'),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-            onPressed: () => setState(() => _isEditing = !_isEditing),
-          ),
+          if (_puedeEditar)
+            IconButton(
+              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+              onPressed: () => setState(() => _isEditing = !_isEditing),
+            ),
         ],
       ),
       body: SingleChildScrollView(

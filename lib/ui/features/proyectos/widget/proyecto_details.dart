@@ -1,5 +1,6 @@
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/editar_proyecto_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -19,10 +20,18 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
   String? error;
   Proyecto? proyecto;
 
+  bool _puedeGestionar = false;
+
   @override
   void initState() {
     super.initState();
     _cargar();
+    _cargarPermiso();
+  }
+
+  Future<void> _cargarPermiso() async {
+    final puede = await RoleHelper.puedeGestionarProyectos();
+    if (mounted) setState(() => _puedeGestionar = puede);
   }
 
   Future<void> _cargar() async {
@@ -49,7 +58,7 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (proyecto != null)
+          if (proyecto != null && _puedeGestionar)
             Row(
               children: [
                 IconButton(

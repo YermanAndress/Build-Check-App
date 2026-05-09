@@ -1,3 +1,4 @@
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -19,6 +20,8 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
   late TextEditingController _cantidadCtrl;
   String _tipoSeleccionado = '';
 
+  bool _puedeEditar = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +31,12 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
           : widget.movimiento.cantidad.toString(),
     );
     _tipoSeleccionado = widget.movimiento.tipoMovimiento;
+    _cargarPermiso();
+  }
+
+  Future<void> _cargarPermiso() async {
+    final puede = await RoleHelper.puedeEditarMovimientos();
+    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   @override
@@ -93,24 +102,25 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: Text(
-            _isEditing ? 'Editar Movimiento' : 'Detalle del Movimiento'),
+          _isEditing ? 'Editar Movimiento' : 'Detalle del Movimiento',
+        ),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-            onPressed: () {
-              setState(() {
-                _isEditing = !_isEditing;
-                // Restaurar valores si se cancela
-                if (!_isEditing) {
-                  _cantidadCtrl.text =
-                      widget.movimiento.cantidad % 1 == 0
-                          ? widget.movimiento.cantidad.toInt().toString()
-                          : widget.movimiento.cantidad.toString();
-                  _tipoSeleccionado = widget.movimiento.tipoMovimiento;
-                }
-              });
-            },
-          ),
+          if (_puedeEditar)
+            IconButton(
+              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+              onPressed: () {
+                setState(() {
+                  _isEditing = !_isEditing;
+                  // Restaurar valores si se cancela
+                  if (!_isEditing) {
+                    _cantidadCtrl.text = widget.movimiento.cantidad % 1 == 0
+                        ? widget.movimiento.cantidad.toInt().toString()
+                        : widget.movimiento.cantidad.toString();
+                    _tipoSeleccionado = widget.movimiento.tipoMovimiento;
+                  }
+                });
+              },
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -154,13 +164,14 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                           ? const Color(0xFF4CAF50)
                           : const Color(0xFFE53935);
                       return GestureDetector(
-                        onTap: () =>
-                            setState(() => _tipoSeleccionado = tipo),
+                        onTap: () => setState(() => _tipoSeleccionado = tipo),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: selected
                                 ? color
@@ -183,7 +194,9 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                   )
                 : Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: esEntrada
                           ? const Color(0xFFF0F7F0)
@@ -231,7 +244,8 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                     _cantidadCtrl,
                     Icons.straighten,
                     keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                      decimal: true,
+                    ),
                     valueColor: esEntrada
                         ? const Color(0xFF2E7D32)
                         : const Color(0xFFE53935),
@@ -249,8 +263,9 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                   // Registrado (solo lectura)
                   _buildReadOnlyInfo(
                     'Registrado',
-                    DateFormat('dd/MM/yyyy HH:mm')
-                        .format(widget.movimiento.fechaCreacion),
+                    DateFormat(
+                      'dd/MM/yyyy HH:mm',
+                    ).format(widget.movimiento.fechaCreacion),
                     Icons.access_time_outlined,
                     valueColor: Colors.blueGrey,
                   ),
@@ -296,8 +311,7 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 8),
         _isEditing
             ? TextField(
@@ -308,15 +322,16 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               )
             : Row(
                 children: [
-                  Icon(icon,
-                      size: 20,
-                      color: valueColor ?? const Color(0xFF4CAF50)),
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: valueColor ?? const Color(0xFF4CAF50),
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     controller.text.isEmpty ? '—' : controller.text,
@@ -341,8 +356,7 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 8),
         Row(
           children: [
