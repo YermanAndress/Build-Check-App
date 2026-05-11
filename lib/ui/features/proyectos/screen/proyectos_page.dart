@@ -4,6 +4,7 @@ import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
+import 'package:build_check_app/ui/features/proyectos/widget/unirse_proyecto_dialog.dart';
 import 'package:flutter/material.dart';
 
 class ProyectosPage extends StatefulWidget {
@@ -40,7 +41,7 @@ class _ProyectosPageState extends State<ProyectosPage> {
       error = null;
     });
     try {
-      proyectos = await _service.obtenerProyectos();
+      proyectos = await _service.obtenerMisProyectos();
       if (_searchCtrl.text.isNotEmpty) {
         _filtrar(_searchCtrl.text);
       } else {
@@ -66,8 +67,28 @@ class _ProyectosPageState extends State<ProyectosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      floatingActionButton: _puedeCrear
-          ? FloatingActionButton(
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: "join_project",
+            backgroundColor: const Color(0xFF2196F3),
+            child: const Icon(Icons.link, color: Colors.white),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const UnirseProyectoDialog(),
+              ).then((value) {
+                if (value == true) {
+                  _cargar();
+                }
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          if (_puedeCrear)
+            FloatingActionButton(
+              heroTag: "create_project",
               backgroundColor: const Color(0xFF4CAF50),
               child: const Icon(Icons.add, color: Colors.white),
               onPressed: () {
@@ -80,8 +101,9 @@ class _ProyectosPageState extends State<ProyectosPage> {
                   }
                 });
               },
-            )
-          : null,
+            ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

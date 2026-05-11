@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/ui/shared/sheet/factura_sheet.dart';
@@ -14,9 +15,12 @@ import 'package:build_check_app/ui/shared/widgets/stat_card.dart';
 
 import 'package:build_check_app/services/movimiento_service.dart';
 import 'package:build_check_app/services/material_service.dart';
+import 'package:build_check_app/services/proyecto_service.dart';
 
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
+import 'package:build_check_app/models/proyecto_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -61,6 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final MovimientoService _movimientoService = MovimientoService();
   final MaterialService _materialService = MaterialService();
+  final ProyectoService _proyectoService = ProyectoService();
 
   Future<void> _cargarStatsHoy() async {
     if (!mounted) return;
@@ -181,12 +186,42 @@ class _DashboardPageState extends State<DashboardPage> {
               color: Color(0xFF555555),
             ),
             onSelected: (value) async {
-              if (value == 'logout') {
+              if (value == 'admin') {
+                final prefs = await SharedPreferences.getInstance();
+                final proyectoId = prefs.getInt("proyectoActual");
+                if (proyectoId != null) {
+                  try {
+                    final proyecto = await _proyectoService.obtenerProyecto(
+                      proyectoId,
+                    );
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminProyectoPage(proyecto: proyecto),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  }
+                }
+              } else if (value == 'logout') {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove("token");
+                await prefs.remove("usuario");
+                await prefs.remove("proyectoActual");
                 await SecureStorage.clear();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const Loginpage()),
-                );
+                if (mounted) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const Loginpage()),
+                  );
+                }
               }
             },
             itemBuilder: (context) {
@@ -208,6 +243,17 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       );
                     },
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'admin',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings_outlined, color: Color(0xFF4CAF50)),
+                      SizedBox(width: 10),
+                      Text("Administrar proyecto"),
+                    ],
                   ),
                 ),
                 const PopupMenuDivider(),

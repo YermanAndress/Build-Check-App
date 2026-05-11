@@ -1,5 +1,6 @@
 // lib/ui/main_screen.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:build_check_app/services/role_helper.dart';
 
 import 'features/dashboard/screen/dashboard_page.dart';
@@ -7,6 +8,7 @@ import 'features/proyectos/screen/proyectos_page.dart';
 import 'features/facturas/screen/facturas_page.dart';
 import 'features/movimientos/screen/movimientos_page.dart';
 import 'features/materiales/screen/materiales_page.dart';
+import 'features/proyectos/widget/select_proyecto_modal.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -26,13 +28,14 @@ class _MainScreenState extends State<MainScreen> {
     _TabItem(icon: Icons.folder_outlined, label: 'Proyectos'),
     _TabItem(icon: Icons.inventory_2_outlined, label: 'Inventario'),
     _TabItem(icon: Icons.swap_vert, label: 'Movimientos'),
-    _TabItem(icon: Icons.bar_chart_outlined, label: 'Facturas'), // índice 4
+    _TabItem(icon: Icons.bar_chart_outlined, label: 'Facturas'),
   ];
 
   @override
   void initState() {
     super.initState();
     _cargarPermisos();
+    _verificarProyecto();
   }
 
   Future<void> _cargarPermisos() async {
@@ -43,6 +46,32 @@ class _MainScreenState extends State<MainScreen> {
         _cargandoRol = false;
       });
     }
+  }
+
+  bool _mostrarSelector = false;
+
+  Future<void> _verificarProyecto() async {
+    final prefs = await SharedPreferences.getInstance();
+    final proyectoId = prefs.getInt("proyectoActual");
+
+    if (proyectoId == null && mounted) {
+      setState(() => _mostrarSelector = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mostrarModalSeleccion();
+      });
+    }
+  }
+
+  void _mostrarModalSeleccion() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => SelectProyectoModal(
+        onProyectoSelected: (proyecto) {
+          setState(() => _mostrarSelector = false);
+        },
+      ),
+    );
   }
 
   // Builders según tabs visibles
