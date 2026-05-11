@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
+
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
-import 'package:flutter/material.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 
 class CrearProyectoPage extends StatefulWidget {
   const CrearProyectoPage({super.key});
@@ -15,14 +17,15 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
   final _descripcionCtrl = TextEditingController();
   final _ubicacionCtrl = TextEditingController();
   final _presupuestoCtrl = TextEditingController();
-  String _estadoSeleccionado = "PENDIENTE";
+  String _estadoSeleccionado = "Pendiente";
 
   bool enviando = false;
 
   static const List<String> estadosDisponibles = [
-    "PENDIENTE",
-    "EN_PROGRESO",
-    "COMPLETADO",
+    "Pendiente",
+    "Planificacion",
+    "Ejecucion",
+    "Terminado",
   ];
 
   @override
@@ -46,7 +49,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 20,
                     ),
                   ],
@@ -104,33 +107,39 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                     keyboardType: TextInputType.number,
                     validator: (v) => v!.isEmpty ? "Requerido" : null,
                   ),
-                   DropdownButtonFormField<String>(
-                     value: _estadoSeleccionado,
-                     decoration: const InputDecoration(
-                       labelText: "Estado",
-                       prefixIcon: Icon(
-                         Icons.flag_outlined,
-                         color: Colors.blueGrey,
-                       ),
-                     ),
-                     items: estadosDisponibles
-                         .map((e) => DropdownMenuItem(
-                               value: e,
-                               child: Text(
-                                 e == "PENDIENTE"
-                                     ? "Pendiente"
-                                     : e == "EN_PROGRESO"
-                                         ? "En Progreso"
-                                         : "Completado",
-                               ),
-                             ))
-                         .toList(),
-                     onChanged: (value) {
-                       setState(() => _estadoSeleccionado = value!);
-                     },
-                     validator: (v) =>
-                         v == null || v.isEmpty ? "Requerido" : null,
-                   ),
+                  DropdownButtonFormField<String>(
+                    initialValue: _estadoSeleccionado,
+                    decoration: const InputDecoration(
+                      labelText: "Estado",
+                      prefixIcon: Icon(
+                        Icons.flag_outlined,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                    items: estadosDisponibles
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(
+                              e == "Pendiente"
+                                  ? "Pendiente"
+                                  : e == "Planificacion"
+                                  ? "Planificacion"
+                                  : e == "Ejecucion"
+                                  ? "Ejecucion"
+                                  : e == "Terminado"
+                                  ? "Terminado"
+                                  : "Ejecucion",
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _estadoSeleccionado = value!);
+                    },
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Requerido" : null,
+                  ),
                 ],
               ),
             ),
@@ -169,18 +178,34 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => enviando = true);
-    final service = ProyectoService();
-    final proyecto = Proyecto(
-      id: null,
-      nombre: _nombreCtrl.text,
-      descripcion: _descripcionCtrl.text,
-      ubicacion: _ubicacionCtrl.text,
-      presupuesto: double.parse(_presupuestoCtrl.text),
-      estado: _estadoSeleccionado,
-      fechaCreacion: "",
-    );
-    final ok = await service.crearProyecto(proyecto);
-    if (ok && mounted) Navigator.pop(context, true);
-    setState(() => enviando = false);
+    try {
+      final service = ProyectoService();
+      final proyecto = Proyecto(
+        id: null,
+        nombre: _nombreCtrl.text,
+        descripcion: _descripcionCtrl.text,
+        ubicacion: _ubicacionCtrl.text,
+        presupuesto: double.parse(_presupuestoCtrl.text),
+        estado: _estadoSeleccionado,
+        fechaCreacion: "",
+      );
+      final created = await service.crearProyecto(proyecto);
+
+      if (mounted) {
+        await ProyectoActual.set(
+          created.id!,
+          rolEnProyecto: created.rolProyecto ?? 'ROLE_OWNER',
+        );
+        if (!mounted) return;
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+    if (mounted) setState(() => enviando = false);
   }
 }

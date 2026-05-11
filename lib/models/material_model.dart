@@ -1,4 +1,3 @@
-/// Modelo completo de Material que corresponde con el backend
 class Material {
   final int id;
   final String nombre;
@@ -24,16 +23,14 @@ class Material {
 
   factory Material.fromJson(Map<String, dynamic> json) => Material(
     id: (json['id'] as num).toInt(),
-    nombre: json['nombre'] ?? '',
-    descripcion: json['descripcion'],
-    unidadMedida: json['unidadMedida'] ?? '',
-    precioUnitario: json['precioUnitario'] != null
-        ? (json['precioUnitario'] as num).toDouble()
-        : null,
+    nombre: json['nombre'].toString(),
+    descripcion: json['descripcion']?.toString(),
+    unidadMedida: json['unidadMedida'].toString(),
+    precioUnitario: (json['precioUnitario'] as num?)?.toDouble(),
     stockActual: (json['stockActual'] as num).toDouble(),
     stockReferencia: (json['stockReferencia'] as num).toDouble(),
-    usuarioCreador: json['usuarioCreador'] ?? 'system',
-    fechaCreacion: json['fechaCreacion'] ?? '',
+    usuarioCreador: json['usuarioCreador'].toString(),
+    fechaCreacion: json['fechaCreacion'].toString(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -51,13 +48,12 @@ class Material {
   DateTime get fechaCreacionDate => DateTime.parse(fechaCreacion);
 }
 
-/// Alerta de Material con stock bajo
 class AlertaMaterial {
   final int id;
   final String nombre;
   final String mensaje;
-  final int stockActual;
-  final int stockReferencia;
+  final double stockActual;
+  final double stockReferencia;
   final String unidadMedida;
 
   const AlertaMaterial({
@@ -70,12 +66,12 @@ class AlertaMaterial {
   });
 
   factory AlertaMaterial.fromJson(Map<String, dynamic> json) => AlertaMaterial(
-    id: json['id'],
-    nombre: json['nombre'] ?? '',
-    mensaje: json['mensaje'] ?? '',
-    stockActual: (json['stockActual'] as num).toInt(),
-    stockReferencia: (json['stockReferencia'] as num).toInt(),
-    unidadMedida: json['unidadMedida'] ?? '',
+    id: (json['id'] as int).toInt(),
+    nombre: json['nombre'].toString(),
+    mensaje: json['mensaje'].toString(),
+    stockActual: (json['stockActual'] as num).toDouble(),
+    stockReferencia: (json['stockReferencia'] as num).toDouble(),
+    unidadMedida: json['unidadMedida'].toString(),
   );
 
   double get porcentaje => (stockReferencia > 0)
@@ -83,11 +79,10 @@ class AlertaMaterial {
       : 0.0;
 }
 
-/// Versión simplificada de Material para listas
 class MaterialItem {
   final int id;
   final String nombre;
-  final double? stockActual;
+  final double stockActual;
   final String unidadMedida;
 
   const MaterialItem({
@@ -99,11 +94,8 @@ class MaterialItem {
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
     id: (json['id'] as num).toInt(),
-    nombre: json['nombre'] ?? '',
-    stockActual: json['stockActual'] != null
-        ? (json['stockActual'] as num).toDouble()
-        : null,
-    unidadMedida: json['unidadMedida'] ?? '',
+    nombre: json['nombre'].toString(),
+    stockActual: (json['stockActual'] as num).toDouble(),
+    unidadMedida: json['unidadMedida'].toString(),
   );
 }
-

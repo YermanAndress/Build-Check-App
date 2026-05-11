@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
 import 'package:build_check_app/services/role_helper.dart';
@@ -5,7 +7,6 @@ import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/unirse_proyecto_dialog.dart';
-import 'package:flutter/material.dart';
 
 class ProyectosPage extends StatefulWidget {
   const ProyectosPage({super.key});
@@ -181,7 +182,7 @@ class _ProyectosPageState extends State<ProyectosPage> {
     }
     return ListView.separated(
       itemCount: filtrados.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final p = filtrados[i];
         return GestureDetector(
@@ -189,7 +190,10 @@ class _ProyectosPageState extends State<ProyectosPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ProyectoDetails(proyectoId: p.id!),
+                builder: (_) => ProyectoDetails(
+                  proyectoId: p.id!,
+                  rolEnProyecto: p.rolProyecto,
+                ),
               ),
             ).then((value) {
               if (value == true) {

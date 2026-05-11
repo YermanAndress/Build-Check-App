@@ -1,14 +1,18 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/auth_header.dart';
+<<<<<<< HEAD
 import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:http/http.dart' as http;
+=======
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 
 class ProyectoService {
-  /// Obtiene SOLO los proyectos del usuario actual (recomendado)
   Future<List<Proyecto>> obtenerMisProyectos() async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.get(
@@ -17,6 +21,7 @@ class ProyectoService {
     );
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
+<<<<<<< HEAD
       final List<dynamic> lista = decoded['proyectos'] as List<dynamic>;
       return lista
           .map((e) => Proyecto.fromJson(e as Map<String, dynamic>))
@@ -38,6 +43,14 @@ class ProyectoService {
       final decoded = jsonDecode(res.body);
       final List<dynamic> lista = decoded['proyectos'];
       return lista.map((e) => Proyecto.fromJson(e)).toList();
+=======
+      final listaRaw = decoded['proyectos'];
+      if (listaRaw == null) return [];
+      final List<dynamic> lista = listaRaw as List<dynamic>;
+      return lista
+          .map((e) => Proyecto.fromJson(e as Map<String, dynamic>))
+          .toList();
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
     }
     throw Exception("Error al cargar proyectos: ${res.statusCode}");
   }
@@ -56,6 +69,7 @@ class ProyectoService {
     throw Exception("Error al cargar proyecto: ${res.statusCode}");
   }
 
+<<<<<<< HEAD
   Future<bool> crearProyecto(Proyecto proyecto) async {
     final res = await HttpInterceptor.send(() async {
       return http.post(
@@ -69,6 +83,20 @@ class ProyectoService {
       return false;
     }
     return res.statusCode == 200 || res.statusCode == 201;
+=======
+  Future<Proyecto> crearProyecto(Proyecto proyecto) async {
+    final headers = await AuthHeader.getHeaders();
+    final res = await http.post(
+      Uri.parse(ApiConfig.proyectos),
+      headers: headers,
+      body: jsonEncode(proyecto.toJson()),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      final decoded = jsonDecode(res.body);
+      return Proyecto.fromJson(decoded['proyecto']);
+    }
+    throw Exception("Error al crear proyecto: ${res.statusCode}");
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
   }
 
   Future<bool> actualizarProyecto(Proyecto proyecto) async {
@@ -103,9 +131,6 @@ class ProyectoService {
   }
 
   /// ============= MÉTODOS DE INVITACIONES =============
-
-  /// Genera un nuevo token de invitación para un proyecto
-  /// Retorna: {token, expires_at, usos_restantes}
   Future<Map<String, dynamic>> generarInvitacion(
     int proyectoId,
     String rolPorDefecto,
@@ -127,7 +152,6 @@ class ProyectoService {
     throw Exception("Error al generar invitación: ${res.statusCode}");
   }
 
-  /// Obtiene las invitaciones activas de un proyecto
   Future<List<Map<String, dynamic>>> obtenerInvitaciones(int proyectoId) async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.get(
@@ -142,7 +166,6 @@ class ProyectoService {
     throw Exception("Error al obtener invitaciones: ${res.statusCode}");
   }
 
-  /// Revoca una invitación existente
   Future<bool> revocarInvitacion(int proyectoId, String token) async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.delete(
@@ -153,8 +176,6 @@ class ProyectoService {
   }
 
   /// ============= MÉTODOS DE MIEMBROS =============
-
-  /// Obtiene la lista de miembros de un proyecto
   Future<List<Map<String, dynamic>>> obtenerMiembros(int proyectoId) async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.get(
@@ -169,7 +190,6 @@ class ProyectoService {
     throw Exception("Error al obtener miembros: ${res.statusCode}");
   }
 
-  /// Cambia el rol de un usuario en el proyecto
   Future<bool> cambiarRolMiembro(
     int proyectoId,
     int usuarioId,
@@ -184,7 +204,6 @@ class ProyectoService {
     return res.statusCode == 200;
   }
 
-  /// Remueve un usuario del proyecto
   Future<bool> removerMiembro(int proyectoId, int usuarioId) async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.delete(
@@ -195,9 +214,6 @@ class ProyectoService {
   }
 
   /// ============= MÉTODOS DE UNIRSE A PROYECTO =============
-
-  /// Se une a un proyecto usando un token de invitación
-  /// Retorna: {token, proyecto_id, rol_proyecto}
   Future<Map<String, dynamic>> unirseAProyecto(String token) async {
     final headers = await AuthHeader.getHeaders();
     final res = await http.post(

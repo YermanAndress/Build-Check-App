@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+<<<<<<< HEAD
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
@@ -7,6 +10,15 @@ import 'package:flutter/material.dart';
 import '../widget/login_items.dart';
 import '../../../../services/login_service.dart';
 import '../../../main_screen.dart';
+=======
+import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
+import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
+import 'package:build_check_app/ui/features/login/widget/login_items.dart';
+import 'package:build_check_app/services/login_service.dart';
+import 'package:build_check_app/services/jwt_service.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/ui/main_screen.dart';
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -31,16 +43,34 @@ class _LoginpageState extends State<Loginpage> {
         passwordController.text.trim(),
       );
 
+<<<<<<< HEAD
       await SecureStorage.save("accessToken", data['accessToken']);
       await SecureStorage.save("refreshToken", data['refreshToken']);
       await SecureStorage.save("usuario", jsonEncode(data['usuario']));
+=======
+      final prefs = await SharedPreferences.getInstance();
+      final token = data["token"];
+      prefs.setString("token", token);
+      prefs.setString("usuario", jsonEncode(data["usuario"]));
+
+      final proyectoId = JwtService.getProyectoId(token);
+      final rolProyecto = JwtService.getRolProyecto(token);
+
+      if (proyectoId != null && rolProyecto != null) {
+        await ProyectoActual.set(proyectoId, rolEnProyecto: rolProyecto);
+      }
+
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
       await Future.delayed(const Duration(milliseconds: 200));
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
       );

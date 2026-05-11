@@ -19,7 +19,6 @@ import 'package:build_check_app/services/proyecto_service.dart';
 
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
-import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -136,8 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!mounted) return;
       MaterialService.invalidateCache();
       await _cargarStatsHoy();
-      await _materialService
-          .obtenerAlertas(); // refrescar stock bajo tras una salida
+      await _materialService.obtenerAlertas();
     });
   }
 
@@ -231,8 +229,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: FutureBuilder<String?>(
                     future: SecureStorage.read("usuario"),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data == null)
+                      if (!snapshot.hasData || snapshot.data == null) {
                         return const SizedBox();
+                      }
                       final usuario = jsonDecode(snapshot.data!);
                       final nombre = usuario["nombre"] ?? "Usuario";
                       return Text(

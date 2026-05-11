@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
 
@@ -43,7 +44,7 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
   Future<void> _seleccionarProyecto(Proyecto proyecto) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt("proyectoActual", proyecto.id!);
-    
+
     if (mounted) {
       widget.onProyectoSelected?.call(proyecto);
       Navigator.pop(context, true);
@@ -71,10 +72,7 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
               style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              height: 300,
-              child: _buildContent(),
-            ),
+            SizedBox(height: 300, child: _buildContent()),
           ],
         ),
       ),
@@ -101,10 +99,7 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _cargar,
-              child: const Text("Reintentar"),
-            ),
+            ElevatedButton(onPressed: _cargar, child: const Text("Reintentar")),
           ],
         ),
       );
@@ -124,7 +119,6 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                // Navegar a crear proyecto
                 Navigator.pop(context);
               },
               icon: const Icon(Icons.add),
@@ -137,7 +131,7 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
 
     return ListView.separated(
       itemCount: proyectos.length,
-      separatorBuilder: (_, __) => const Divider(height: 16),
+      separatorBuilder: (_, _) => const Divider(height: 16),
       itemBuilder: (context, index) {
         final proyecto = proyectos[index];
         return InkWell(
@@ -161,11 +155,8 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  proyecto.descripcion ?? "Sin descripción",
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 13,
-                  ),
+                  proyecto.descripcion,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

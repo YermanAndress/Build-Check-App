@@ -42,7 +42,6 @@ class LoginService {
     required String nombre,
     required String correo,
     required String password,
-    required String rol,
   }) async {
     await _loadPublicKey();
 
@@ -51,10 +50,9 @@ class LoginService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'nombre': nombre, // sin cifrar
-        'correo': _rsa.encrypt(correo), // ✅ solo el correo se cifra
-        'password': password, // sin cifrar, BCrypt lo maneja
-        'rol': rol,
+        'nombre': nombre,
+        'correo': _rsa.encrypt(correo),
+        'password': password,
       }),
     );
 

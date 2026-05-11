@@ -6,6 +6,7 @@ class Proyecto {
   final double presupuesto;
   final String estado;
   final String fechaCreacion;
+  final String? rolProyecto;
 
   Proyecto({
     required this.id,
@@ -15,31 +16,35 @@ class Proyecto {
     required this.presupuesto,
     required this.estado,
     required this.fechaCreacion,
+    this.rolProyecto,
   });
-
-  factory Proyecto.fromJson(Map<String, dynamic> json) {
-    return Proyecto(
-      id: json['id'],
-      nombre: json['nombre'],
-      descripcion: json['descripcion'] ?? '',
-      ubicacion: json['ubicacion'],
-      presupuesto: (json['presupuesto'] as num).toDouble(),
-      estado: json['estado'],
-      fechaCreacion: json['fechaCreacion'],
-    );
-  }
 
   DateTime get fechaCreacionDate => DateTime.parse(fechaCreacion);
 
+  factory Proyecto.fromJson(Map<String, dynamic> json) {
+    return Proyecto(
+      id: (json['id'] as num?)?.toInt(),
+      nombre: json['nombre'].toString(),
+      descripcion: json['descripcion'].toString(),
+      ubicacion: json['ubicacion'].toString(),
+      presupuesto: (json['presupuesto'] as num).toDouble(),
+      estado: json['estado'].toString(),
+      fechaCreacion: json['fechaCreacion'].toString(),
+      rolProyecto:
+          json['rolDelUsuario'] as String? ?? json['rolProyecto'] as String?,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "nombre": nombre,
-      "descripcion": descripcion,
-      "ubicacion": ubicacion,
-      "presupuesto": presupuesto,
-      "estado": estado,
-      "fechaCreacion": fechaCreacion,
+      'id': id,
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'ubicacion': ubicacion,
+      'presupuesto': presupuesto,
+      'estado': estado,
+      'fechaCreacion': fechaCreacion,
+      'rolProyecto': rolProyecto,
     };
   }
 }

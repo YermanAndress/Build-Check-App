@@ -39,7 +39,7 @@ class Factura {
 
       observaciones: json['observaciones']?.toString() ?? '',
       valorTotal: (json['valorTotal'] as num?)?.toDouble() ?? 0.0,
-      proyectoId: (json['proyectoId'] as num?)?.toInt() ?? 1,
+      proyectoId: (json['proyectoId'] as num).toInt(),
       urlImagen: json['urlImagen']?.toString(),
       items: itemsList,
     );
@@ -78,8 +78,13 @@ class FacturaMaterialItem {
 
   factory FacturaMaterialItem.fromJson(Map<String, dynamic> json) {
     return FacturaMaterialItem(
+<<<<<<< HEAD
       materialId: json['materialId'] ?? 0,
       nombre: json['nombreMaterial'] ?? json['nombre'] ?? 'Sin nombre',
+=======
+      materialId: json['materialId']?.toInt(),
+      nombre: json['nombre'] ?? 'Sin nombre',
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
       cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0.0,
       precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
       unidadMedida: UnidadMedida.values.byName(

@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 class SearchableList<T> extends StatefulWidget {
   final Future<List<T>> Function() fetchData;
   final String Function(T)
-  searchPredicate; // función que devuelve el texto por el cual filtrar
+  searchPredicate;
   final Widget Function(T) itemBuilder;
   final String title;
   final String hintText;
-  final String emptyMessage; // mensaje cuando la lista está vacía
+  final String emptyMessage;
   final String
+<<<<<<< HEAD
   noResultsMessage; // mensaje cuando la búsqueda no arroja resultados
   final Widget? floatingActionButton; // botón flotante opcional
+=======
+  noResultsMessage;
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 
   const SearchableList({
     super.key,
@@ -68,26 +72,26 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // ✓ mismo fondo
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white, // ✓ mismo color
-        elevation: 0, // ✓ sin sombra
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: Text(
-          widget.title, // ← título parametrizado
+          widget.title,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
-        centerTitle: true, // ✓ título centrado
+        centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: TextField(
-              onChanged: _filter, // ← función de filtrado interna
+              onChanged: _filter,
               decoration: InputDecoration(
-                hintText: widget.hintText, // ← hint parametrizado
+                hintText: widget.hintText,
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF4CAF50)),
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
@@ -120,7 +124,6 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
               ),
             )
           : ListView.separated(
-              // ✓ misma lista
               padding: const EdgeInsets.all(16),
               itemCount: _filteredItems.length,
               separatorBuilder: (_, _) => const SizedBox(height: 10),

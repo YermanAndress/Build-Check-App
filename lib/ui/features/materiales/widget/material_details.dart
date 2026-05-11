@@ -34,7 +34,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   Future<void> _guardarCambios() async {
     setState(() => _isSaving = true);
 
-    // Simulación de guardado (Aquí conectarías con tu servicio/n8n)
     await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
@@ -66,7 +65,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Cabecera con Icono Grande
             Center(
               child: Container(
                 padding: const EdgeInsets.all(24),
@@ -89,7 +87,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
             ),
             const SizedBox(height: 30),
 
-            // Formulario / Información
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -112,7 +109,6 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                   ),
                   const Divider(height: 30),
 
-                  // Información de Stock (Solo lectura)
                   _buildReadOnlyInfo(
                     'Stock Actual',
                     '${widget.material.stockActual} ${widget.material.unidadMedida}',

@@ -46,13 +46,7 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
   }
 
   Future<void> _guardarCambios() async {
-    final int? id = widget.movimiento.id;
-    if (id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se puede editar: ID no disponible')),
-      );
-      return;
-    }
+    final int id = widget.movimiento.id;
 
     final double? nuevaCantidad = double.tryParse(_cantidadCtrl.text.trim());
     if (nuevaCantidad == null || nuevaCantidad <= 0) {
@@ -68,10 +62,8 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
       'tipoMovimiento': _tipoSeleccionado,
       'cantidad': nuevaCantidad,
       'fecha': DateFormat('yyyy-MM-dd').format(widget.movimiento.fecha),
-      if (widget.movimiento.materialId != null)
-        'materialId': widget.movimiento.materialId,
-      if (widget.movimiento.proyectoId != null)
-        'proyectoId': widget.movimiento.proyectoId,
+      'materialId': widget.movimiento.materialId,
+      'proyectoId': widget.movimiento.proyectoId,
     };
 
     final ok = await MovimientoService().actualizarMovimiento(id, data);
@@ -105,6 +97,7 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
           _isEditing ? 'Editar Movimiento' : 'Detalle del Movimiento',
         ),
         actions: [
+<<<<<<< HEAD
           if (_puedeEditar)
             IconButton(
               icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
@@ -121,13 +114,28 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                 });
               },
             ),
+=======
+          IconButton(
+            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+            onPressed: () {
+              setState(() {
+                _isEditing = !_isEditing;
+                if (!_isEditing) {
+                  _cantidadCtrl.text = widget.movimiento.cantidad % 1 == 0
+                      ? widget.movimiento.cantidad.toInt().toString()
+                      : widget.movimiento.cantidad.toString();
+                  _tipoSeleccionado = widget.movimiento.tipoMovimiento;
+                }
+              });
+            },
+          ),
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Cabecera con ícono grande
             Center(
               child: Container(
                 padding: const EdgeInsets.all(24),
@@ -154,7 +162,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Badge / Selector de tipo
             _isEditing
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -218,7 +225,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
 
             const SizedBox(height: 30),
 
-            // Tarjeta de información
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -228,17 +234,15 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Material (solo lectura siempre)
                   _buildReadOnlyInfo(
                     'Material',
                     widget.movimiento.materialNombre.isNotEmpty
                         ? widget.movimiento.materialNombre
-                        : 'Material #${widget.movimiento.materialId ?? '—'}',
+                        : 'Material #${widget.movimiento.materialId}',
                     Icons.inventory_2_outlined,
                   ),
                   const Divider(height: 30),
 
-                  // Cantidad (editable)
                   _buildField(
                     'Cantidad',
                     _cantidadCtrl,
@@ -252,7 +256,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                   ),
                   const Divider(height: 30),
 
-                  // Fecha (solo lectura)
                   _buildReadOnlyInfo(
                     'Fecha del Movimiento',
                     dateFormat.format(widget.movimiento.fecha),
@@ -260,7 +263,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                   ),
                   const Divider(height: 30),
 
-                  // Registrado (solo lectura)
                   _buildReadOnlyInfo(
                     'Registrado',
                     DateFormat(

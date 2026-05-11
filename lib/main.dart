@@ -38,9 +38,14 @@ class BuildCheckApp extends StatelessWidget {
         ),
       ),
 
+<<<<<<< HEAD
       //Develop
       home: FutureBuilder<String?>(
         future: SecureStorage.read("accessToken"),
+=======
+      home: FutureBuilder(
+        future: SharedPreferences.getInstance(),
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(

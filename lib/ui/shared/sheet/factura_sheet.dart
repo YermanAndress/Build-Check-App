@@ -22,7 +22,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final _formKey = GlobalKey<FormState>();
   final MaterialService _materialService = MaterialService();
 
-  // Controladores
   final TextEditingController _numeroCtrl = TextEditingController();
   final TextEditingController _proveedorCtrl = TextEditingController();
   final TextEditingController _valorCtrl = TextEditingController(text: '0');
@@ -49,7 +48,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
     super.dispose();
   }
 
-  // --- LÓGICA DE AGREGAR (materialId ahora es opcional) ---
   void _agregarMaterial(
     int? id,
     double cant,
@@ -64,7 +62,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
-          unidadMedida: unidad, // directo
+          unidadMedida: unidad,
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -72,7 +70,6 @@ class _FacturaSheetState extends State<FacturaSheet> {
     _mostrarSnack('Agregado: $nombre');
   }
 
-  // --- DIÁLOGOS DE SELECCIÓN ---
   void _mostrarOpcionesMaterial() {
     showModalBottomSheet(
       context: context,
@@ -148,7 +145,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                       itemBuilder: (context, i) => ListTile(
                         title: Text(filtrados[i].nombre),
                         subtitle: Text(
-                          "Stock: ${filtrados[i].stockActual ?? 0} ${filtrados[i].unidadMedida}",
+                          "Stock: ${filtrados[i].stockActual} ${filtrados[i].unidadMedida}",
                         ),
                         onTap: () {
                           Navigator.pop(context);
@@ -237,10 +234,8 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   initialValue: tempUnidad,
                   items: UnidadMedida.values
                       .map(
-                        (u) => DropdownMenuItem(
-                          value: u,
-                          child: Text(u.nombre), // muestra texto amigable
-                        ),
+                        (u) =>
+                            DropdownMenuItem(value: u, child: Text(u.nombre)),
                       )
                       .toList(),
                   onChanged: (val) => setDialogState(() {
@@ -271,7 +266,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   double.tryParse(cCtrl.text) ?? 0,
                   double.tryParse(pCtrl.text) ?? 0,
                   nCtrl.text,
-                  tempUnidad, // ✅ enum
+                  tempUnidad,
                 );
                 Navigator.pop(context);
               },

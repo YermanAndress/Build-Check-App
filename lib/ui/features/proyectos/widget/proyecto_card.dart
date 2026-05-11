@@ -1,12 +1,35 @@
+import 'package:flutter/material.dart';
+
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:build_check_app/ui/shared/widgets/card_base.dart';
-import 'package:flutter/material.dart';
 
 class ProyectoCard extends StatelessWidget {
   final Proyecto proyecto;
 
   const ProyectoCard({super.key, required this.proyecto});
+
+  Color get _rolColor {
+    switch (proyecto.rolProyecto) {
+      case 'ROLE_OWNER':
+        return const Color(0xFFFF9800);
+      case 'ROLE_ADMIN':
+        return const Color(0xFF2196F3);
+      case 'ROLE_ALMACENISTA':
+        return const Color(0xFF4CAF50);
+      case 'ROLE_DIRECTOR_OBRA':
+        return const Color(0xFF9C27B0);
+      case 'ROLE_RESIDENTE':
+        return const Color(0xFF00BCD4);
+      default:
+        return const Color(0xFF9E9E9E);
+    }
+  }
+
+  String get _rolLabel {
+    if (proyecto.rolProyecto == null) return '';
+    return proyecto.rolProyecto!.replaceAll('ROLE_', '').replaceAll('_', ' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +41,10 @@ class ProyectoCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProyectoDetails(proyectoId: proyecto.id!),
+            builder: (_) => ProyectoDetails(
+              proyectoId: proyecto.id!,
+              rolEnProyecto: proyecto.rolProyecto,
+            ),
           ),
         );
       },
@@ -40,6 +66,24 @@ class ProyectoCard extends StatelessWidget {
             "Estado: ${proyecto.estado}",
             style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
           ),
+          if (proyecto.rolProyecto != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _rolColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Tu rol: $_rolLabel',
+                style: TextStyle(
+                  color: _rolColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
       rightContent: Column(

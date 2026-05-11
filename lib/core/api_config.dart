@@ -21,4 +21,14 @@ class ApiConfig {
   static const String alertas = '$baseUrl/materiales-service/alertas';
   static const String usuarios = '$baseUrl/usuarios-service';
   static const String proyectos = '$baseUrl/proyecto-service/proyectos';
+
+  // ── Endpoints filtrados por proyecto
+  static String materialesPorProyecto(int id) =>
+      '$baseUrl/materiales-service/proyecto/$id/materiales';
+  static String movimientosPorProyecto(int id) =>
+      '$baseUrl/movimientos-service/proyecto/$id/movimientos';
+  static String facturasPorProyecto(int id) =>
+      '$baseUrl/facturas-service/proyecto/$id/facturas';
+  static String alertasPorProyecto(int id) =>
+      '$baseUrl/materiales-service/proyecto/$id/alertas';
 }

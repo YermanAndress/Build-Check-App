@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 
 class HttpHandler {
   static Future<void> handleUnauthorized(BuildContext context) async {
+<<<<<<< HEAD
     await SecureStorage.clear();
+=======
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+
+>>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const Loginpage()),

@@ -50,7 +50,6 @@ class CardBase extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    // Ícono izquierdo
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -60,10 +59,8 @@ class CardBase extends StatelessWidget {
                       child: Icon(icon, color: iconColor),
                     ),
                     const SizedBox(width: 16),
-                    // Contenido izquierdo (expansible)
                     Expanded(child: leftContent),
                     const SizedBox(width: 8),
-                    // Contenido derecho
                     rightContent,
                     if (showChevron) ...[
                       const SizedBox(width: 8),

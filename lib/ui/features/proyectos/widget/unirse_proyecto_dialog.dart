@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:build_check_app/services/proyecto_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:build_check_app/services/proyecto_service.dart';
 
 class UnirseProyectoDialog extends StatefulWidget {
   const UnirseProyectoDialog({super.key});
@@ -28,8 +29,7 @@ class _UnirseProyectoDialogState extends State<UnirseProyectoDialog> {
 
     try {
       final resultado = await _service.unirseAProyecto(_tokenCtrl.text);
-      
-      // Guardar nuevo token y proyecto ID
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString("token", resultado['token']);
       await prefs.setInt("proyectoActual", resultado['proyecto_id']);
@@ -111,8 +111,7 @@ class _UnirseProyectoDialogState extends State<UnirseProyectoDialog> {
                             width: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation(Colors.white),
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
                             ),
                           )
                         : const Text("Unirse"),
