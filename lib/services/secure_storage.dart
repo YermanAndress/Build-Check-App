@@ -4,11 +4,14 @@ class SecureStorage {
   static const _storage = FlutterSecureStorage();
 
   static Future<void> save(String key, String value) async {
-    await _storage.write(key: key, value: value);
+    final cleanValue = value.trim().replaceAll('\n', '').replaceAll('\r', '');
+    await _storage.write(key: key, value: cleanValue);
   }
 
   static Future<String?> read(String key) async {
-    return await _storage.read(key: key);
+    final value = await _storage.read(key: key);
+    if (value == null) return null;
+    return value.trim().replaceAll('\n', '').replaceAll('\r', '');
   }
 
   static Future<void> delete(String key) async {

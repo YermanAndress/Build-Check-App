@@ -2,19 +2,14 @@ import 'package:flutter/material.dart';
 
 class SearchableList<T> extends StatefulWidget {
   final Future<List<T>> Function() fetchData;
-  final String Function(T)
-  searchPredicate;
+  final String Function(T) searchPredicate;
   final Widget Function(T) itemBuilder;
   final String title;
   final String hintText;
   final String emptyMessage;
   final String
-<<<<<<< HEAD
   noResultsMessage; // mensaje cuando la búsqueda no arroja resultados
   final Widget? floatingActionButton; // botón flotante opcional
-=======
-  noResultsMessage;
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 
   const SearchableList({
     super.key,

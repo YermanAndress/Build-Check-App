@@ -97,7 +97,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
           _isEditing ? 'Editar Movimiento' : 'Detalle del Movimiento',
         ),
         actions: [
-<<<<<<< HEAD
           if (_puedeEditar)
             IconButton(
               icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
@@ -114,22 +113,6 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                 });
               },
             ),
-=======
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-            onPressed: () {
-              setState(() {
-                _isEditing = !_isEditing;
-                if (!_isEditing) {
-                  _cantidadCtrl.text = widget.movimiento.cantidad % 1 == 0
-                      ? widget.movimiento.cantidad.toInt().toString()
-                      : widget.movimiento.cantidad.toString();
-                  _tipoSeleccionado = widget.movimiento.tipoMovimiento;
-                }
-              });
-            },
-          ),
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
         ],
       ),
       body: SingleChildScrollView(

@@ -1,17 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
-<<<<<<< HEAD
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
-=======
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
-import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/core/api_config.dart';

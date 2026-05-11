@@ -119,7 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (_) => const MovimientoSheet(tipo: 'ENTRADA'),
     ).then((_) async {
       if (!mounted) return;
-      MaterialService.invalidateCache();
+      MaterialService.invalidarCache();
       await _cargarStatsHoy();
       await _materialService.obtenerAlertas();
     });
@@ -133,7 +133,7 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (_) => const MovimientoSheet(tipo: 'SALIDA'),
     ).then((_) async {
       if (!mounted) return;
-      MaterialService.invalidateCache();
+      MaterialService.invalidarCache();
       await _cargarStatsHoy();
       await _materialService.obtenerAlertas();
     });

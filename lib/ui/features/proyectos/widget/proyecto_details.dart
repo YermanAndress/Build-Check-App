@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-import 'package:build_check_app/models/proyecto_model.dart';
-import 'package:build_check_app/services/proyecto_service.dart';
-import 'package:build_check_app/services/role_helper.dart';
-import 'package:build_check_app/ui/features/proyectos/screen/editar_proyecto_page.dart';
-=======
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -33,18 +26,16 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
   String? error;
   Proyecto? proyecto;
 
-  bool _puedeGestionar = false;
+  bool get _esAdmin =>
+      widget.rolEnProyecto == 'ROLE_OWNER' ||
+      widget.rolEnProyecto == 'ROLE_ADMIN';
+
+  bool get _esOwner => widget.rolEnProyecto == 'ROLE_OWNER';
 
   @override
   void initState() {
     super.initState();
     _cargar();
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeGestionarProyectos();
-    if (mounted) setState(() => _puedeGestionar = puede);
   }
 
   Future<void> _cargar() async {
@@ -60,12 +51,6 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
     setState(() => cargando = false);
   }
 
-  bool get _esAdmin =>
-      widget.rolEnProyecto == 'ROLE_OWNER' ||
-      widget.rolEnProyecto == 'ROLE_ADMIN';
-
-  bool get _esOwner => widget.rolEnProyecto == 'ROLE_OWNER';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,14 +60,6 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-<<<<<<< HEAD
-          if (proyecto != null && _puedeGestionar)
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () {
-=======
           if (proyecto != null) ...[
             if (_esAdmin)
               IconButton(
@@ -99,7 +76,6 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () =>
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
                     Navigator.push(
                       context,
                       MaterialPageRoute(

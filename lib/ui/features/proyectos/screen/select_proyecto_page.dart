@@ -26,16 +26,25 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
   }
 
   Future<void> _cargar() async {
+    if (!mounted) return;
+
     setState(() {
       _cargando = true;
       _error = null;
     });
     try {
       _proyectos = await _service.obtenerMisProyectos();
+      if (mounted) {
+        setState(() => _cargando = false);
+      }
     } catch (e) {
-      _error = e.toString();
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _cargando = false;
+        });
+      }
     }
-    setState(() => _cargando = false);
   }
 
   Future<void> _seleccionar(Proyecto proyecto) async {
@@ -58,7 +67,9 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
       context: context,
       builder: (_) => const UnirseProyectoDialog(),
     );
-    if (result == true) _cargar();
+    if (result == true && mounted) {
+      _cargar();
+    }
   }
 
   @override
@@ -199,7 +210,7 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
 
     return ListView.separated(
       itemCount: _proyectos.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final p = _proyectos[index];
         return _ProyectoTile(proyecto: p, onTap: () => _seleccionar(p));

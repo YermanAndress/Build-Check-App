@@ -1,16 +1,12 @@
 import 'dart:convert';
-<<<<<<< HEAD
 import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:build_check_app/services/secure_storage.dart';
-=======
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
-import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/models/factura_model.dart';
 
 class FacturaService {
@@ -68,22 +64,15 @@ class FacturaService {
 
   Future<List<Factura>> obtenerFacturas() async {
     try {
-<<<<<<< HEAD
-      final response = await HttpInterceptor.send(() async {
-        return http.get(
-          Uri.parse(ApiConfig.facturas),
-          headers: await AuthHeader.getHeaders(),
-        );
-      });
-=======
       final proyectoId = ProyectoActual.id;
       final url = proyectoId != null
           ? ApiConfig.facturasPorProyecto(proyectoId)
           : ApiConfig.facturas;
->>>>>>> d73e01d (BC-49 feature: Añadir flujo de usuarios)
 
-      final headers = await AuthHeader.getHeaders();
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final response = await HttpInterceptor.send(() async {
+        return http.get(Uri.parse(url), headers: await AuthHeader.getHeaders());
+      });
+
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
         if (decodedData is Map<String, dynamic> &&
