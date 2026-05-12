@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/models/proyecto_model.dart';
-import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:build_check_app/ui/shared/widgets/card_base.dart';
 
 class ProyectoCard extends StatelessWidget {
   final Proyecto proyecto;
+  final bool esActivo;
+  final VoidCallback? onTap;
 
-  const ProyectoCard({super.key, required this.proyecto});
+  const ProyectoCard({
+    super.key,
+    required this.proyecto,
+    this.esActivo = false,
+    this.onTap,
+  });
 
   Color get _rolColor {
     switch (proyecto.rolProyecto) {
@@ -37,20 +43,29 @@ class ProyectoCard extends StatelessWidget {
       icon: Icons.apartment_outlined,
       iconBackgroundColor: const Color(0xFFF0F7F0),
       iconColor: const Color(0xFF4CAF50),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProyectoDetails(
-              proyectoId: proyecto.id!,
-              rolEnProyecto: proyecto.rolProyecto,
-            ),
-          ),
-        );
-      },
+      borderColor: esActivo ? const Color(0xFF4CAF50) : null,
+      onTap: onTap ?? () {},
       leftContent: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (esActivo) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Proyecto activo',
+                style: TextStyle(
+                  color: Color(0xFF4CAF50),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(
             proyecto.nombre,
             style: const TextStyle(

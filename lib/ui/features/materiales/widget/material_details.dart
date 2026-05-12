@@ -27,7 +27,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   }
 
   Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeGestionarMateriales();
+    final puede = RoleHelper.puedeGestionarMateriales();
     if (mounted) setState(() => _puedeEditar = puede);
   }
 

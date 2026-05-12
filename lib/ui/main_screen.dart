@@ -21,7 +21,6 @@ class _MainScreenState extends State<MainScreen> {
   bool _puedeVerFacturas = false;
   bool _cargandoRol = true;
 
-  // Definición completa de tabs disponibles (sin Facturas, que se añade condicionalmente)
   static final List<_TabItem> _tabsBase = [
     const _TabItem(icon: Icons.home_outlined, label: 'Inicio'),
     const _TabItem(icon: Icons.folder_outlined, label: 'Proyectos'),
@@ -41,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _cargarPermisos() async {
-    final puedeFacturas = await RoleHelper.puedeVerFacturas();
+    final puedeFacturas = RoleHelper.puedeVerFacturas();
     if (mounted) {
       setState(() {
         _puedeVerFacturas = puedeFacturas;

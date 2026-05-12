@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/services/secure_storage.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 
 class UnirseProyectoDialog extends StatefulWidget {
   const UnirseProyectoDialog({super.key});
@@ -30,9 +30,11 @@ class _UnirseProyectoDialogState extends State<UnirseProyectoDialog> {
     try {
       final resultado = await _service.unirseAProyecto(_tokenCtrl.text);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("token", resultado['token']);
-      await prefs.setInt("proyectoActual", resultado['proyecto_id']);
+      await SecureStorage.save("accessToken", resultado['token']);
+      await ProyectoActual.set(
+        resultado['proyecto_id'],
+        rol: resultado['rol_proyecto'],
+      );
 
       if (mounted) {
         Navigator.pop(context, true);

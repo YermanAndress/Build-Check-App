@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
 import 'package:build_check_app/services/role_helper.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_card.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/proyecto_details.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/unirse_proyecto_dialog.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 
 class ProyectosPage extends StatefulWidget {
   const ProyectosPage({super.key});
@@ -32,8 +34,21 @@ class _ProyectosPageState extends State<ProyectosPage> {
   }
 
   Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeGestionarProyectos();
+    final puede = RoleHelper.puedeGestionarProyectos();
     if (mounted) setState(() => _puedeCrear = puede);
+  }
+
+  Future<void> _seleccionarProyecto(Proyecto proyecto) async {
+    try {
+      final result = await _service.seleccionarProyecto(proyecto.id!);
+      await ProyectoActual.set(proyecto.id!, rol: result['rol_proyecto']);
+      await SecureStorage.save("accessToken", result['accessToken']);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al seleccionar proyecto: $e")),
+      );
+    }
   }
 
   Future<void> _cargar() async {
@@ -180,13 +195,29 @@ class _ProyectosPageState extends State<ProyectosPage> {
         ),
       );
     }
+    final activos = <Proyecto>[];
+    final otros = <Proyecto>[];
+    final activoId = ProyectoActual.id;
+    for (final proyecto in filtrados) {
+      if (activoId != null && proyecto.id == activoId) {
+        activos.add(proyecto);
+      } else {
+        otros.add(proyecto);
+      }
+    }
+    final ordenados = [...activos, ...otros];
+
     return ListView.separated(
-      itemCount: filtrados.length,
+      itemCount: ordenados.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
-        final p = filtrados[i];
-        return GestureDetector(
-          onTap: () {
+        final p = ordenados[i];
+        return ProyectoCard(
+          proyecto: p,
+          esActivo: p.id == activoId,
+          onTap: () async {
+            await _seleccionarProyecto(p);
+            if (!context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -196,12 +227,9 @@ class _ProyectosPageState extends State<ProyectosPage> {
                 ),
               ),
             ).then((value) {
-              if (value == true) {
-                _cargar();
-              }
+              if (value == true) _cargar();
             });
           },
-          child: ProyectoCard(proyecto: p),
         );
       },
     );

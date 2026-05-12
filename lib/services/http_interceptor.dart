@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:build_check_app/services/secure_storage.dart';
-import 'package:build_check_app/core/api_config.dart'; // para baseUrl
+import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:flutter/material.dart';
 
 class HttpInterceptor {
@@ -27,10 +28,8 @@ class HttpInterceptor {
         await SecureStorage.save("accessToken", newTokens['accessToken']!);
         await SecureStorage.save("refreshToken", newTokens['refreshToken']!);
         _isRefreshing = false;
-        // Reintentar la petición original una sola vez
         return await request();
       } else {
-        // Falló el refresh → logout
         await _logout();
         return response;
       }
@@ -51,9 +50,14 @@ class HttpInterceptor {
 
     try {
       final url = Uri.parse("${ApiConfig.baseUrl}/usuarios-service/refresh");
+      final headers = {
+        'Content-Type': 'application/json',
+        if (ProyectoActual.id != null)
+          'X-Proyecto-Id': ProyectoActual.id.toString(),
+      };
       final res = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'refreshToken': refreshToken}),
       );
       if (res.statusCode == 200) {

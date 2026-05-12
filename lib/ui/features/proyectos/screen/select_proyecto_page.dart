@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:build_check_app/ui/main_screen.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/crear_proyecto_page.dart';
 import 'package:build_check_app/ui/features/proyectos/widget/unirse_proyecto_dialog.dart';
 
@@ -48,8 +50,31 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
   }
 
   Future<void> _seleccionar(Proyecto proyecto) async {
-    await ProyectoActual.set(proyecto.id!, rolEnProyecto: proyecto.rolProyecto);
-    if (mounted) Navigator.pop(context);
+    try {
+      final resultado = await _service.seleccionarProyecto(proyecto.id!);
+      await SecureStorage.save("accessToken", resultado['accessToken']);
+      await ProyectoActual.set(
+        resultado['proyecto_id'],
+        rol: resultado['rol_proyecto'],
+      );
+
+      print("Proyecto seleccionado: ${proyecto.id}");
+      print("Resultado del servicio: $resultado");
+      print("proyecto_id: ${resultado['proyecto_id']}");
+      print("rol_proyecto: ${resultado['rol_proyecto']}");
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   Future<void> _abrirCrear() async {
@@ -210,7 +235,7 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
 
     return ListView.separated(
       itemCount: _proyectos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final p = _proyectos[index];
         return _ProyectoTile(proyecto: p, onTap: () => _seleccionar(p));

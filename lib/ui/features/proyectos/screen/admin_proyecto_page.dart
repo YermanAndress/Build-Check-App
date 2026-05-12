@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
@@ -320,7 +321,6 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
     }
   }
 
-
   Color _colorRol(String? rol) {
     switch (rol) {
       case 'ROLE_OWNER':
@@ -348,7 +348,6 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
         .toUpperCase();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -366,8 +365,8 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
             onSelected: (value) async {
               if (value == 'logout') {
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.remove("token");
                 await prefs.remove("usuario");
+                await SecureStorage.clear();
                 await ProyectoActual.limpiar();
                 if (!context.mounted) return;
                 Navigator.pushReplacement(
@@ -483,7 +482,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: _selectedTab == 0 ? _buildMiembros() : _buildInvitaciones(),
           ),

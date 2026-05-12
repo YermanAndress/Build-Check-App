@@ -15,13 +15,13 @@ class ProyectoActual {
     rolEnProyecto = prefs.getString('rolProyectoActual');
   }
 
-  static Future<void> set(int proyectoId, {String? rolEnProyecto}) async {
+  static Future<void> set(int proyectoId, {String? rol}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('proyectoActual', proyectoId);
-    if (rolEnProyecto != null) {
-      await prefs.setString('rolProyectoActual', rolEnProyecto);
+    if (rol != null) {
+      await prefs.setString('rolProyectoActual', rol);
     }
-    rolEnProyecto = rolEnProyecto;
+    rolEnProyecto = rol;
     notifier.value = proyectoId;
   }
 

@@ -34,10 +34,10 @@ class ProyectoService {
     throw Exception("Error al cargar proyectos: ${response.statusCode}");
   }
 
-  Future<Proyecto> obtenerProyecto(int id) async {
+  Future<Proyecto> obtenerProyecto(int proyectoId) async {
     final response = await HttpInterceptor.send(() async {
       return http.get(
-        Uri.parse("${ApiConfig.proyectos}/$id"),
+        Uri.parse("${ApiConfig.proyectos}/$proyectoId"),
         headers: await AuthHeader.getHeaders(),
       );
     });
@@ -257,5 +257,30 @@ class ProyectoService {
       };
     }
     throw Exception("Error al unirse al proyecto: ${response.statusCode}");
+  }
+
+  Future<Map<String, dynamic>> seleccionarProyecto(int proyectoId) async {
+    final response = await HttpInterceptor.send(() async {
+      return http.post(
+        Uri.parse("${ApiConfig.proyectos}/$proyectoId/seleccionar"),
+        headers: await AuthHeader.getHeaders(),
+      );
+    });
+
+    if (response.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      throw Exception("No autorizado");
+    }
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return {
+        'accessToken': decoded['accessToken'],
+        'proyecto_id': decoded['proyecto_id'],
+        'rol_proyecto': decoded['rol_proyecto'],
+      };
+    }
+
+    throw Exception("Error al seleccionar proyecto: ${response.statusCode}");
   }
 }

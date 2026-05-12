@@ -5,6 +5,7 @@ import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
 import 'package:flutter/material.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 
 import 'package:build_check_app/ui/shared/sheet/factura_sheet.dart';
 import 'package:build_check_app/ui/shared/sheet/movimiento_sheet.dart';
@@ -52,8 +53,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _cargarPermisos() async {
-    final registrar = await RoleHelper.puedeRegistrarMovimientos();
-    final facturas = await RoleHelper.puedeGestionarFacturas();
+    final registrar = RoleHelper.puedeRegistrarMovimientos();
+    final facturas = RoleHelper.puedeGestionarFacturas();
     if (mounted) {
       setState(() {
         _puedeRegistrar = registrar;
@@ -148,13 +149,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<String?> rolUsuario() async {
-    final usuarioJson = await SecureStorage.read("usuario");
-    if (usuarioJson == null) return null;
-    final usuario = jsonDecode(usuarioJson);
-    return usuario["rol"];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,88 +180,106 @@ class _DashboardPageState extends State<DashboardPage> {
             onSelected: (value) async {
               if (value == 'admin') {
                 final prefs = await SharedPreferences.getInstance();
+                if (!context.mounted) return;
                 final proyectoId = prefs.getInt("proyectoActual");
                 if (proyectoId != null) {
                   try {
                     final proyecto = await _proyectoService.obtenerProyecto(
                       proyectoId,
                     );
-                    if (mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AdminProyectoPage(proyecto: proyecto),
-                        ),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminProyectoPage(proyecto: proyecto),
+                      ),
+                    );
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
                   }
                 }
               } else if (value == 'logout') {
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.remove("token");
+                if (!context.mounted) return;
                 await prefs.remove("usuario");
-                await prefs.remove("proyectoActual");
                 await SecureStorage.clear();
-                if (mounted) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const Loginpage()),
-                  );
-                }
+                await ProyectoActual.limpiar();
+                if (!context.mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const Loginpage()),
+                );
               }
             },
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem(
-                  enabled: false,
-                  child: FutureBuilder<String?>(
-                    future: SecureStorage.read("usuario"),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data == null) {
-                        return const SizedBox();
-                      }
-                      final usuario = jsonDecode(snapshot.data!);
-                      final nombre = usuario["nombre"] ?? "Usuario";
-                      return Text(
-                        "Hola, $nombre",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: FutureBuilder(
+                  future: SharedPreferences.getInstance(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox();
+                    final prefs = snapshot.data!;
+                    final usuarioJson = prefs.getString("usuario");
+                    if (usuarioJson == null) return const SizedBox();
+                    final usuario = jsonDecode(usuarioJson);
+                    final nombre = usuario["nombre"] ?? "Usuario";
+                    final rolProyecto = ProyectoActual.rolEnProyecto;
+                    final rolLabel = rolProyecto
+                        ?.replaceAll('ROLE_', '')
+                        .replaceAll('_', ' ');
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hola, $nombre 👋",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
-                      );
-                    },
-                  ),
+                        if (rolLabel != null) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF4CAF50,
+                              ).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              rolLabel,
+                              style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'admin',
-                  child: Row(
-                    children: [
-                      Icon(Icons.settings_outlined, color: Color(0xFF4CAF50)),
-                      SizedBox(width: 10),
-                      Text("Administrar proyecto"),
-                    ],
-                  ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red),
+                    SizedBox(width: 10),
+                    Text("Cerrar sesión", style: TextStyle(color: Colors.red)),
+                  ],
                 ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text("Cerrar sesion"),
-                    ],
-                  ),
-                ),
-              ];
-            },
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],

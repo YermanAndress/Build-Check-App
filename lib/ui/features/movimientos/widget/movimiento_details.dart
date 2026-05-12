@@ -35,7 +35,7 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
   }
 
   Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeEditarMovimientos();
+    final puede = RoleHelper.puedeEditarMovimientos();
     if (mounted) setState(() => _puedeEditar = puede);
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 
 class CrearProyectoPage extends StatefulWidget {
   const CrearProyectoPage({super.key});
@@ -190,11 +191,13 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
         fechaCreacion: "",
       );
       final created = await service.crearProyecto(proyecto);
+      final resultado = await service.seleccionarProyecto(created.id!);
 
       if (mounted) {
+        await SecureStorage.save("accessToken", resultado['accessToken']);
         await ProyectoActual.set(
-          created.id!,
-          rolEnProyecto: created.rolProyecto ?? 'ROLE_OWNER',
+          resultado['proyecto_id'],
+          rol: resultado['rol_proyecto'],
         );
         if (!mounted) return;
         Navigator.pop(context, true);

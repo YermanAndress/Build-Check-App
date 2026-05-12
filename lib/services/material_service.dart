@@ -151,6 +151,10 @@ class MaterialService {
         Uri.parse(ApiConfig.facturas),
       );
       request.headers["Authorization"] = "Bearer $token";
+      final proyectoId = ProyectoActual.id;
+      if (proyectoId != null) {
+        request.headers["X-Proyecto-Id"] = proyectoId.toString();
+      }
       request.fields.addAll(fields);
 
       if (imageBytes != null) {

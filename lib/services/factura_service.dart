@@ -38,6 +38,10 @@ class FacturaService {
         Uri.parse(ApiConfig.facturas),
       );
       request.headers["Authorization"] = "Bearer $token";
+      final proyectoIdHeader = ProyectoActual.id;
+      if (proyectoIdHeader != null) {
+        request.headers["X-Proyecto-Id"] = proyectoIdHeader.toString();
+      }
 
       request.fields['fecha'] =
           "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";

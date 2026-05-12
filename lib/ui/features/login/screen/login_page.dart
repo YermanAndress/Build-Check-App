@@ -1,14 +1,14 @@
 import 'dart:convert';
+import 'package:build_check_app/ui/features/proyectos/screen/select_proyecto_page.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/services/secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
 import 'package:build_check_app/ui/features/login/widget/login_items.dart';
 import 'package:build_check_app/services/login_service.dart';
-import 'package:build_check_app/services/jwt_service.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
-import 'package:build_check_app/ui/main_screen.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -36,23 +36,18 @@ class _LoginpageState extends State<Loginpage> {
       // Guardar tokens y usuario usando SecureStorage (más seguro)
       await SecureStorage.save("accessToken", data['accessToken']);
       await SecureStorage.save("refreshToken", data['refreshToken']);
-      await SecureStorage.save("usuario", jsonEncode(data['usuario']));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("usuario", jsonEncode(data['usuario']));
 
       // Extraer información del proyecto desde el token (si existe)
-      final accessToken = data['accessToken'] as String;
-      final proyectoId = JwtService.getProyectoId(accessToken);
-      final rolProyecto = JwtService.getRolProyecto(accessToken);
-
-      if (proyectoId != null && rolProyecto != null) {
-        await ProyectoActual.set(proyectoId, rolEnProyecto: rolProyecto);
-      }
+      await ProyectoActual.limpiar();
 
       await Future.delayed(const Duration(milliseconds: 200));
 
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+          MaterialPageRoute(builder: (_) => const SelectProyectoPage()),
         );
       }
     } catch (e) {
