@@ -33,6 +33,8 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final DateTime _fecha = DateTime.now();
   Uint8List? _fotoBytes;
   bool _enviando = false;
+  bool _cargandoImagen = false;
+  String? _fotoOrigen;
 
   double get _totalCalculado => _itemsSeleccionados.fold(
     0.0,
@@ -352,9 +354,15 @@ class _FacturaSheetState extends State<FacturaSheet> {
             if (_modo == 'foto') ...[
               FotoSelector(
                 bytes: _fotoBytes,
-                onSelect: _seleccionarFoto,
-                onRemove: () => setState(() => _fotoBytes = null),
+                onSelect: _seleccionarFotoGaleria,
+                onCamera: _tomarFotoCamara,
+                onRemove: () => setState(() {
+                  _fotoBytes = null;
+                  _fotoOrigen = null;
+                }),
                 archivo: null,
+                isLoading: _cargandoImagen,
+                sourceLabel: _fotoOrigen,
               ),
               const SizedBox(height: 32),
               BotonEnviar(
@@ -475,15 +483,163 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  Future<void> _seleccionarFoto() async {
+  // --- Seleccionar foto desde GALERÍA ---
+  Future<void> _seleccionarFotoGaleria() async {
     final p = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (p != null) {
+      setState(() => _cargandoImagen = true);
       final b = await p.readAsBytes();
-      setState(() => _fotoBytes = b);
+      // Simular procesamiento (cuando haya backend se reemplaza)
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        setState(() {
+          _fotoBytes = b;
+          _fotoOrigen = 'Galería';
+          _cargandoImagen = false;
+        });
+      }
     }
+  }
+
+  // --- Tomar foto desde CÁMARA con previsualización ---
+  Future<void> _tomarFotoCamara() async {
+    final p = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+    if (p != null) {
+      final b = await p.readAsBytes();
+      if (mounted) {
+        _mostrarPrevisualizacion(b);
+      }
+    }
+  }
+
+  // --- Diálogo de previsualización con reintentar ---
+  void _mostrarPrevisualizacion(Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Título
+              const Row(
+                children: [
+                  Icon(Icons.preview_rounded, color: Color(0xFF4CAF50)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Previsualización',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Aviso
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Verifica que la imagen sea legible y no esté borrosa.',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Imagen
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  imageBytes,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Botones
+              Row(
+                children: [
+                  // Reintentar
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _tomarFotoCamara(); // Abrir cámara de nuevo
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Reintentar'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Usar esta foto
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        setState(() => _cargandoImagen = true);
+                        // Simular procesamiento
+                        Future.delayed(const Duration(milliseconds: 800), () {
+                          if (mounted) {
+                            setState(() {
+                              _fotoBytes = imageBytes;
+                              _fotoOrigen = 'Cámara';
+                              _cargandoImagen = false;
+                            });
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      label: const Text('Usar foto'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildModoSelector() {
