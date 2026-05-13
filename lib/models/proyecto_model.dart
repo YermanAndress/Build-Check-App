@@ -5,7 +5,7 @@ class Proyecto {
   final String ubicacion;
   final double presupuesto;
   final String estado;
-  final String fechaCreacion;
+  final DateTime fechaCreacion;
   final String? rolProyecto;
 
   Proyecto({
@@ -19,8 +19,6 @@ class Proyecto {
     this.rolProyecto,
   });
 
-  DateTime get fechaCreacionDate => DateTime.parse(fechaCreacion);
-
   factory Proyecto.fromJson(Map<String, dynamic> json) {
     return Proyecto(
       id: (json['id'] as num?)?.toInt(),
@@ -29,22 +27,23 @@ class Proyecto {
       ubicacion: json['ubicacion'].toString(),
       presupuesto: (json['presupuesto'] as num).toDouble(),
       estado: json['estado'].toString(),
-      fechaCreacion: json['fechaCreacion'].toString(),
+      fechaCreacion:
+          DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
       rolProyecto:
           json['rolDelUsuario'] as String? ?? json['rolProyecto'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'id': id,
       'nombre': nombre,
       'descripcion': descripcion,
       'ubicacion': ubicacion,
       'presupuesto': presupuesto,
       'estado': estado,
-      'fechaCreacion': fechaCreacion,
-      'rolProyecto': rolProyecto,
+      'fechaCreacion': fechaCreacion.toIso8601String(),
     };
+    return json;
   }
 }

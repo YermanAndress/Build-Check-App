@@ -1,8 +1,12 @@
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
+
 class MovimientoResumen {
   final int id;
   final String tipoMovimiento;
   final DateTime fecha;
   final double cantidad;
+  final int usuarioId;
   final int materialId;
   final int proyectoId;
   final String materialNombre;
@@ -15,6 +19,7 @@ class MovimientoResumen {
     required this.fecha,
     required this.cantidad,
     required this.fechaCreacion,
+    required this.usuarioId,
     required this.materialId,
     required this.proyectoId,
     required this.materialNombre,
@@ -27,6 +32,14 @@ class MovimientoResumen {
   }
 
   factory MovimientoResumen.fromJson(Map<String, dynamic> json) {
+    // Obtener objetos anidados
+    final material = json['material'] as Map<String, dynamic>?;
+
+    final int materialId = (material?['id'] as num?)?.toInt() ?? 0;
+    final String materialNombre =
+        material?['nombre']?.toString() ?? 'Sin nombre';
+    final String unidadMedida = material?['unidadMedida']?.toString() ?? '';
+
     return MovimientoResumen(
       id: (json['id'] as num).toInt(),
       tipoMovimiento: json['tipoMovimiento'].toString(),
@@ -34,10 +47,11 @@ class MovimientoResumen {
       fechaCreacion:
           DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
       cantidad: (json['cantidad'] as num).toDouble(),
-      materialId: (json['materialId'] as num).toInt(),
-      proyectoId: (json['proyectoId'] as num).toInt(),
-      materialNombre: json['materialNombre'].toString(),
-      unidadMedida: json['unidadMedida'].toString(),
+      materialId: materialId,
+      proyectoId: ProyectoActual.id ?? 0,
+      usuarioId: UsuarioActual.id ?? 0,
+      materialNombre: materialNombre,
+      unidadMedida: unidadMedida,
     );
   }
 
@@ -48,8 +62,9 @@ class MovimientoResumen {
         fecha: fecha,
         fechaCreacion: fechaCreacion,
         cantidad: cantidad,
+        usuarioId: UsuarioActual.id ?? 0,
         materialId: materialId,
-        proyectoId: proyectoId,
+        proyectoId: ProyectoActual.id ?? 0,
         materialNombre: nombre,
         unidadMedida: unidad,
       );

@@ -36,14 +36,20 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
     });
     try {
       _proyectos = await _service.obtenerMisProyectos();
+      debugPrint("Proyectos cargados: ${_proyectos.length}");
+      debugPrint("Proyectos: $_proyectos");
       if (mounted) {
         setState(() => _cargando = false);
+        debugPrint("Proyectos cargados: ${_proyectos.length}");
+        debugPrint("Proyectos: $_proyectos");
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString();
           _cargando = false;
+          debugPrint("Proyectos cargados: ${_proyectos.length}");
+          debugPrint("Proyectos: $_proyectos");
         });
       }
     }
@@ -58,10 +64,10 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
         rol: resultado['rol_proyecto'],
       );
 
-      print("Proyecto seleccionado: ${proyecto.id}");
-      print("Resultado del servicio: $resultado");
-      print("proyecto_id: ${resultado['proyecto_id']}");
-      print("rol_proyecto: ${resultado['rol_proyecto']}");
+      debugPrint("Proyecto seleccionado: ${proyecto.id}");
+      debugPrint("Resultado del servicio: $resultado");
+      debugPrint("proyecto_id: ${resultado['proyecto_id']}");
+      debugPrint("rol_proyecto: ${resultado['rol_proyecto']}");
       if (mounted) {
         Navigator.pushReplacement(
           context,

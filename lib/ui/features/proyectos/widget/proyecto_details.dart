@@ -205,7 +205,7 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
                 const Divider(height: 30),
                 _info(
                   "Fecha de creacion",
-                  DateFormat('dd/MM/yyyy HH:mm').format(p.fechaCreacionDate),
+                  DateFormat('dd/MM/yyyy HH:mm').format(p.fechaCreacion),
                   Icons.calendar_today_outlined,
                 ),
               ],

@@ -26,7 +26,12 @@ class _EditarProyectoPageState extends State<EditarProyectoPage> {
 
   bool enviando = false;
 
-  final List<String> estados = ["PENDIENTE", "EN_PROGRESO", "COMPLETADO"];
+  final List<String> estados = [
+    "Pendiente",
+    "Planificacion",
+    "Ejecucion",
+    "Terminado",
+  ];
 
   @override
   void initState() {

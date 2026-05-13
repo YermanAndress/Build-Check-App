@@ -6,8 +6,7 @@ class Material {
   final double? precioUnitario;
   final double stockActual;
   final double stockReferencia;
-  final String usuarioCreador;
-  final String fechaCreacion;
+  final DateTime? fechaCreacion;
 
   const Material({
     required this.id,
@@ -17,8 +16,7 @@ class Material {
     this.precioUnitario,
     required this.stockActual,
     required this.stockReferencia,
-    required this.usuarioCreador,
-    required this.fechaCreacion,
+    this.fechaCreacion,
   });
 
   factory Material.fromJson(Map<String, dynamic> json) => Material(
@@ -29,8 +27,9 @@ class Material {
     precioUnitario: (json['precioUnitario'] as num?)?.toDouble(),
     stockActual: (json['stockActual'] as num).toDouble(),
     stockReferencia: (json['stockReferencia'] as num).toDouble(),
-    usuarioCreador: json['usuarioCreador'].toString(),
-    fechaCreacion: json['fechaCreacion'].toString(),
+    fechaCreacion: json['fechaCreacion'] != null
+        ? DateTime.parse(json['fechaCreacion'].toString())
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -41,11 +40,8 @@ class Material {
     'precioUnitario': precioUnitario,
     'stockActual': stockActual,
     'stockReferencia': stockReferencia,
-    'usuarioCreador': usuarioCreador,
     'fechaCreacion': fechaCreacion,
   };
-
-  DateTime get fechaCreacionDate => DateTime.parse(fechaCreacion);
 }
 
 class AlertaMaterial {
@@ -84,12 +80,14 @@ class MaterialItem {
   final String nombre;
   final double stockActual;
   final String unidadMedida;
+  final DateTime? fechaCreacion;
 
   const MaterialItem({
     required this.id,
     required this.nombre,
     required this.stockActual,
     required this.unidadMedida,
+    this.fechaCreacion,
   });
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
@@ -97,5 +95,8 @@ class MaterialItem {
     nombre: json['nombre'].toString(),
     stockActual: (json['stockActual'] as num).toDouble(),
     unidadMedida: json['unidadMedida'].toString(),
+    fechaCreacion: json['fechaCreacion'] != null
+        ? DateTime.parse(json['fechaCreacion'].toString())
+        : null,
   );
 }

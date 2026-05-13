@@ -180,7 +180,9 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
 
     setState(() => enviando = true);
     try {
+      debugPrint('🚀 _guardar - Iniciando creación de proyecto');
       final service = ProyectoService();
+
       final proyecto = Proyecto(
         id: null,
         nombre: _nombreCtrl.text,
@@ -188,10 +190,16 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
         ubicacion: _ubicacionCtrl.text,
         presupuesto: double.parse(_presupuestoCtrl.text),
         estado: _estadoSeleccionado,
-        fechaCreacion: "",
+        fechaCreacion: DateTime.now(), // Se genera en el servidor
       );
+
+      debugPrint('🚀 _guardar - Proyecto a crear: ${proyecto.toJson()}');
+
       final created = await service.crearProyecto(proyecto);
+      debugPrint('🚀 _guardar - Proyecto creado: ${created.toJson()}');
+
       final resultado = await service.seleccionarProyecto(created.id!);
+      debugPrint('🚀 _guardar - Resultado seleccionar: $resultado');
 
       if (mounted) {
         await SecureStorage.save("accessToken", resultado['accessToken']);
@@ -203,6 +211,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
+      debugPrint('❌ _guardar - Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,

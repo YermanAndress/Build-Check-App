@@ -105,7 +105,7 @@ class ProyectoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            proyecto.fechaCreacion.split("T").first,
+            proyecto.fechaCreacion.toString().split("T").first,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,

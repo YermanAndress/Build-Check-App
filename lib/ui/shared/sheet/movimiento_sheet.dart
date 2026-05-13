@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
 import 'package:build_check_app/services/http_handler.dart';
@@ -118,8 +120,8 @@ class MovimientoSheetState extends State<MovimientoSheet> {
       'cantidad': double.parse(_cantidadCtrl.text.trim()),
       'fecha':
           "${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}",
-      'usuarioId': 1,
-      'proyectoId': 1,
+      'usuarioId': UsuarioActual.id ?? 0,
+      'proyectoId': ProyectoActual.id ?? 0,
       'materialId': _materialSeleccionado!.id,
     });
 

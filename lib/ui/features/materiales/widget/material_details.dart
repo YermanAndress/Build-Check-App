@@ -1,3 +1,4 @@
+import 'package:build_check_app/enum/unidad_medida.dart';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/material.dart';
 
@@ -14,15 +15,20 @@ class MaterialDetailScreen extends StatefulWidget {
 class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   bool _isEditing = false;
   late TextEditingController _nombreCtrl;
-  late TextEditingController _unidadCtrl;
   bool _isSaving = false;
   bool _puedeEditar = false;
+  UnidadMedida? _unidadSeleccionada;
 
   @override
   void initState() {
     super.initState();
     _nombreCtrl = TextEditingController(text: widget.material.nombre);
-    _unidadCtrl = TextEditingController(text: widget.material.unidadMedida);
+
+    _unidadSeleccionada = UnidadMedida.values.firstWhere(
+      (e) => e.name == widget.material.unidadMedida,
+      orElse: () => UnidadMedida.UNIDAD,
+    );
+
     _cargarPermiso();
   }
 
@@ -101,14 +107,31 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                     _nombreCtrl,
                     Icons.label_outline,
                   ),
-                  const Divider(height: 30),
-                  _buildField(
-                    'Unidad de Medida',
-                    _unidadCtrl,
-                    Icons.straighten,
+                  // Dropdown de unidad de medida
+                  DropdownButtonFormField<UnidadMedida>(
+                    initialValue: _unidadSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: "Unidad de Medida",
+                      prefixIcon: Icon(
+                        Icons.rule_outlined,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                    items: UnidadMedida.values.map((unidad) {
+                      return DropdownMenuItem<UnidadMedida>(
+                        value: unidad,
+                        child: Text(unidad.nombre),
+                      );
+                    }).toList(),
+                    onChanged: _isEditing
+                        ? (value) {
+                            setState(() {
+                              _unidadSeleccionada = value;
+                            });
+                          }
+                        : null, // Deshabilitar si no está en modo edición
+                    validator: (value) => value == null ? "Requerido" : null,
                   ),
-                  const Divider(height: 30),
-
                   _buildReadOnlyInfo(
                     'Stock Actual',
                     '${widget.material.stockActual} ${widget.material.unidadMedida}',

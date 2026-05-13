@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
@@ -23,13 +24,24 @@ class ProyectoService {
     }
 
     if (response.statusCode == 200) {
+      debugPrint('📥 obtenerMisProyectos - statusCode: 200');
+      debugPrint('📥 Raw response body: ${response.body}');
       final decoded = jsonDecode(response.body);
+      debugPrint('📥 Decoded JSON: $decoded'); // 👈 ver qué llega
+
       final listaRaw = decoded['proyectos'];
-      if (listaRaw == null) return [];
+      debugPrint('📥 Lista de proyectos: $listaRaw');
+      if (listaRaw == null) {
+        debugPrint('❌ Lista de proyectos es NULL');
+        return [];
+      }
       final List<dynamic> lista = listaRaw as List<dynamic>;
-      return lista
-          .map((e) => Proyecto.fromJson(e as Map<String, dynamic>))
-          .toList();
+      debugPrint('📥 Cantidad de proyectos: ${lista.length}');
+
+      return lista.map((e) {
+        debugPrint('📥 Proyecto item: $e');
+        return Proyecto.fromJson(e as Map<String, dynamic>);
+      }).toList();
     }
     throw Exception("Error al cargar proyectos: ${response.statusCode}");
   }
@@ -55,6 +67,7 @@ class ProyectoService {
   }
 
   Future<Proyecto> crearProyecto(Proyecto proyecto) async {
+    debugPrint('📤 crearProyecto - Enviando: ${proyecto.toJson()}');
     final response = await HttpInterceptor.send(() async {
       return http.post(
         Uri.parse(ApiConfig.proyectos),
@@ -63,16 +76,44 @@ class ProyectoService {
       );
     });
 
+    debugPrint('📤 crearProyecto - statusCode: ${response.statusCode}');
+    debugPrint('📤 crearProyecto - response body: ${response.body}');
+
     if (response.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
       throw Exception("No autorizado");
     }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      final decoded = jsonDecode(response.body);
-      return Proyecto.fromJson(decoded['proyecto']);
+      try {
+        final decoded = jsonDecode(response.body);
+        debugPrint('📤 crearProyecto - Decoded: $decoded');
+
+        final proyectoData = decoded['proyecto'];
+        debugPrint('📤 crearProyecto - Proyecto data: $proyectoData');
+
+        if (proyectoData == null) {
+          throw Exception("Proyecto nulo en la respuesta del servidor");
+        }
+
+        // Verificar cada campo
+        debugPrint(
+          '📤 crearProyecto - Fields in proyecto: ${proyectoData.keys.toList()}',
+        );
+        for (var key in proyectoData.keys) {
+          debugPrint('📤   $key: ${proyectoData[key]}');
+        }
+
+        return Proyecto.fromJson(proyectoData);
+      } catch (e) {
+        debugPrint('❌ crearProyecto - Error parseando JSON: $e');
+        debugPrint('❌ Response body: ${response.body}');
+        rethrow;
+      }
     }
-    throw Exception("Error al crear proyecto: ${response.statusCode}");
+    throw Exception(
+      "Error al crear proyecto: ${response.statusCode} - ${response.body}",
+    );
   }
 
   Future<bool> actualizarProyecto(Proyecto proyecto) async {
@@ -131,7 +172,7 @@ class ProyectoService {
       final decoded = jsonDecode(response.body);
       return {
         'token': decoded['token'],
-        'expires_at': decoded['expires_at'],
+        'fecha_expiracion': decoded['fecha_expiracion'],
         'usos_restantes': decoded['usos_restantes'],
       };
     }
@@ -260,12 +301,16 @@ class ProyectoService {
   }
 
   Future<Map<String, dynamic>> seleccionarProyecto(int proyectoId) async {
+    debugPrint('📤 seleccionarProyecto - proyectoId: $proyectoId');
     final response = await HttpInterceptor.send(() async {
       return http.post(
         Uri.parse("${ApiConfig.proyectos}/$proyectoId/seleccionar"),
         headers: await AuthHeader.getHeaders(),
       );
     });
+
+    debugPrint('📤 seleccionarProyecto - statusCode: ${response.statusCode}');
+    debugPrint('📤 seleccionarProyecto - response body: ${response.body}');
 
     if (response.statusCode == 401) {
       await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
@@ -274,11 +319,15 @@ class ProyectoService {
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
-      return {
+      debugPrint('📤 seleccionarProyecto - Decoded: $decoded');
+
+      final result = {
         'accessToken': decoded['accessToken'],
         'proyecto_id': decoded['proyecto_id'],
         'rol_proyecto': decoded['rol_proyecto'],
       };
+      debugPrint('📤 seleccionarProyecto - Result: $result');
+      return result;
     }
 
     throw Exception("Error al seleccionar proyecto: ${response.statusCode}");

@@ -43,7 +43,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
     });
     try {
       final miembros = await _service.obtenerMiembros(widget.proyecto.id!);
-      print("Miembros recibidos: ${jsonEncode(miembros)}");
+      debugPrint("Miembros recibidos: ${jsonEncode(miembros)}");
       setState(() => _miembros = miembros);
     } catch (e) {
       setState(() => _errorMiembros = e.toString());
@@ -172,36 +172,56 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
     setState(() => _cargandoInvitaciones = false);
   }
 
+  // Future<void> _generarInvitacion() async {
+  //   const roles = ['ROLE_ALMACENISTA', 'ROLE_DIRECTOR_OBRA', 'ROLE_RESIDENTE'];
+  //   final rol = await showDialog<String>(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text('Rol para el nuevo miembro'),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: roles
+  //             .map(
+  //               (r) => ListTile(
+  //                 leading: CircleAvatar(
+  //                   radius: 8,
+  //                   backgroundColor: _colorRol(r),
+  //                 ),
+  //                 title: Text(r.replaceAll('ROLE_', '').replaceAll('_', ' ')),
+  //                 onTap: () => Navigator.pop(context, r),
+  //               ),
+  //             )
+  //             .toList(),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text('Cancelar'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  //   if (rol == null) return;
+  //   try {
+  //     final resultado = await _service.generarInvitacion(
+  //       widget.proyecto.id!,
+  //       rol,
+  //     );
+  //     if (mounted) {
+  //       _mostrarTokenDialog(resultado['token'] as String);
+  //       _cargarInvitaciones();
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(
+  //         context,
+  //       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+  //     }
+  //   }
+  // }
+
   Future<void> _generarInvitacion() async {
-    const roles = ['ROLE_ALMACENISTA', 'ROLE_DIRECTOR_OBRA', 'ROLE_RESIDENTE'];
-    final rol = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Rol para el nuevo miembro'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: roles
-              .map(
-                (r) => ListTile(
-                  leading: CircleAvatar(
-                    radius: 8,
-                    backgroundColor: _colorRol(r),
-                  ),
-                  title: Text(r.replaceAll('ROLE_', '').replaceAll('_', ' ')),
-                  onTap: () => Navigator.pop(context, r),
-                ),
-              )
-              .toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-        ],
-      ),
-    );
-    if (rol == null) return;
+    final rol = 'ROLE_VIEWER';
     try {
       final resultado = await _service.generarInvitacion(
         widget.proyecto.id!,
@@ -274,6 +294,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
             label: const Text('Copiar'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: const Color(0xFFFFFFFF),
             ),
           ),
         ],
@@ -618,7 +639,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
         final nombreRaw = m["usuarioNombre"] as String? ?? "Usuario";
 
         final nombre = (nombreRaw.startsWith('0') || nombreRaw.startsWith('1'))
-            ? "Usuario"
+            ? "usuarioNombre"
             : nombreRaw;
 
         final correo = m['usuarioCorreo'] as String? ?? 'Sin correo';
@@ -746,6 +767,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
               label: const Text('Generar Nueva Invitación'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),

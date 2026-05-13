@@ -7,7 +7,6 @@ import 'package:build_check_app/ui/features/proyectos/screen/proyectos_page.dart
 import 'package:build_check_app/ui/features/facturas/screen/facturas_page.dart';
 import 'package:build_check_app/ui/features/movimientos/screen/movimientos_page.dart';
 import 'package:build_check_app/ui/features/materiales/screen/materiales_page.dart';
-import 'package:build_check_app/ui/features/proyectos/screen/select_proyecto_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -51,17 +50,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _verificarProyecto() async {
     await ProyectoActual.cargar();
-    if (ProyectoActual.id == null && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const SelectProyectoPage(),
-            fullscreenDialog: true,
-          ),
-        );
-      });
-    }
   }
 
   // Lista de páginas según los tabs visibles

@@ -27,16 +27,20 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   @override
   void initState() {
     super.initState();
-    _proveedorCtrl =
-        TextEditingController(text: widget.facturaExtraida.proveedor);
-    _numeroCtrl =
-        TextEditingController(text: widget.facturaExtraida.numeroFactura);
+    _proveedorCtrl = TextEditingController(
+      text: widget.facturaExtraida.proveedor,
+    );
+    _numeroCtrl = TextEditingController(
+      text: widget.facturaExtraida.numeroFactura,
+    );
     _valorCtrl = TextEditingController(
-        text: widget.facturaExtraida.valorTotal?.toString() ?? '');
+      text: widget.facturaExtraida.valorTotal?.toString() ?? '',
+    );
 
     _fechaSeleccionada = widget.facturaExtraida.fecha;
-    _fechaCtrl =
-        TextEditingController(text: _dateFormat.format(_fechaSeleccionada));
+    _fechaCtrl = TextEditingController(
+      text: _dateFormat.format(_fechaSeleccionada),
+    );
   }
 
   Future<void> _seleccionarFecha(BuildContext context) async {
@@ -74,15 +78,22 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
       id: widget.facturaExtraida.id,
       numeroFactura: _numeroCtrl.text,
       fecha: _fechaSeleccionada,
-      proveedor: _proveedorCtrl.text.isEmpty ? 'Desconocido' : _proveedorCtrl.text,
+      proveedor: _proveedorCtrl.text.isEmpty
+          ? 'Desconocido'
+          : _proveedorCtrl.text,
       observaciones: widget.facturaExtraida.observaciones,
-      valorTotal: double.tryParse(_valorCtrl.text) ?? widget.facturaExtraida.valorTotal,
+      valorTotal:
+          double.tryParse(_valorCtrl.text) ?? widget.facturaExtraida.valorTotal,
       proyectoId: widget.facturaExtraida.proyectoId,
+      usuarioId: widget.facturaExtraida.usuarioId,
       urlImagen: widget.facturaExtraida.urlImagen,
       items: widget.facturaExtraida.items,
+      fechaCreacion: widget.facturaExtraida.fechaCreacion,
     );
 
-    final success = await FacturaService().registrarFacturaManual(facturaAGuardar);
+    final success = await FacturaService().registrarFacturaManual(
+      facturaAGuardar,
+    );
 
     if (mounted) {
       setState(() => _enviando = false);
@@ -139,24 +150,19 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
                   Expanded(
                     child: Text(
                       'Por favor, revisa y corrige los datos extraídos por la IA antes de guardarlos.',
-                      style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.blue.shade900,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            _buildTextField(
-              'Proveedor',
-              _proveedorCtrl,
-              Icons.business,
-            ),
+            _buildTextField('Proveedor', _proveedorCtrl, Icons.business),
             const SizedBox(height: 12),
-            _buildTextField(
-              'Número de Factura',
-              _numeroCtrl,
-              Icons.receipt,
-            ),
+            _buildTextField('Número de Factura', _numeroCtrl, Icons.receipt),
             const SizedBox(height: 12),
             _buildTextField(
               'Fecha de Emisión',
