@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -8,7 +10,8 @@ import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/services/material_service.dart';
 import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
 import 'package:build_check_app/enum/unidad_medida.dart';
-import 'package:build_check_app/ui/shared/sheet/factura_ocr_review_sheet.dart' as build_check_app_ocr_review;
+import 'package:build_check_app/ui/shared/sheet/factura_ocr_review_sheet.dart'
+    as build_check_app_ocr_review;
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -22,12 +25,10 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final _formKey = GlobalKey<FormState>();
   final MaterialService _materialService = MaterialService();
 
-  // Controladores
   final TextEditingController _numeroCtrl = TextEditingController();
   final TextEditingController _proveedorCtrl = TextEditingController();
   final TextEditingController _valorCtrl = TextEditingController(text: '0');
   final TextEditingController _observacionesCtrl = TextEditingController();
-  final TextEditingController _proyectoCtrl = TextEditingController(text: '1');
 
   final List<FacturaMaterialItem> _itemsSeleccionados = [];
   final DateTime _fecha = DateTime.now();
@@ -47,18 +48,22 @@ class _FacturaSheetState extends State<FacturaSheet> {
     _proveedorCtrl.dispose();
     _valorCtrl.dispose();
     _observacionesCtrl.dispose();
-    _proyectoCtrl.dispose();
     super.dispose();
   }
 
-  // --- LÓGICA DE AGREGAR (materialId ahora es opcional) ---
   void _agregarMaterial(
     int? id,
     double cant,
     double precio,
     String nombre,
     UnidadMedida unidad,
+    int? usuarioId,
+    DateTime fechaCreacion,
   ) {
+    if (usuarioId == null) {
+      _mostrarSnack('Usuario no autenticado', isError: true);
+      return;
+    }
     setState(() {
       _itemsSeleccionados.add(
         FacturaMaterialItem(
@@ -66,7 +71,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
-          unidadMedida: unidad, // directo
+          unidadMedida: unidad,
+          usuarioId: usuarioId,
+          fechaCreacion: fechaCreacion,
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -74,7 +81,11 @@ class _FacturaSheetState extends State<FacturaSheet> {
     _mostrarSnack('Agregado: $nombre');
   }
 
-  // --- DIÁLOGOS DE SELECCIÓN ---
+  @override
+  void initState() {
+    super.initState();
+  }
+
   void _mostrarOpcionesMaterial() {
     showModalBottomSheet(
       context: context,
@@ -150,7 +161,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                       itemBuilder: (context, i) => ListTile(
                         title: Text(filtrados[i].nombre),
                         subtitle: Text(
-                          "Stock: ${filtrados[i].stockActual ?? 0} ${filtrados[i].unidadMedida}",
+                          "Stock: ${filtrados[i].stockActual} ${filtrados[i].unidadMedida}",
                         ),
                         onTap: () {
                           Navigator.pop(context);
@@ -204,6 +215,8 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   double.parse(pCtrl.text),
                   nombre,
                   UnidadMedida.values.byName(unidadMedidaStr),
+                  UsuarioActual.id,
+                  DateTime.now(),
                 );
                 Navigator.pop(context);
               }
@@ -239,10 +252,8 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   initialValue: tempUnidad,
                   items: UnidadMedida.values
                       .map(
-                        (u) => DropdownMenuItem(
-                          value: u,
-                          child: Text(u.nombre), // muestra texto amigable
-                        ),
+                        (u) =>
+                            DropdownMenuItem(value: u, child: Text(u.nombre)),
                       )
                       .toList(),
                   onChanged: (val) => setDialogState(() {
@@ -273,7 +284,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   double.tryParse(cCtrl.text) ?? 0,
                   double.tryParse(pCtrl.text) ?? 0,
                   nCtrl.text,
-                  tempUnidad, // ✅ enum
+                  tempUnidad,
+                  UsuarioActual.id,
+                  DateTime.now(),
                 );
                 Navigator.pop(context);
               },
@@ -307,7 +320,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
         exito = await service.registrarFacturaConFoto(
           bytes: _fotoBytes!,
           fecha: _fecha,
-          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+          proyectoId: ProyectoActual.id ?? 0,
         );
       } else {
         final f = Factura(
@@ -316,7 +329,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
           proveedor: _proveedorCtrl.text,
           observaciones: _observacionesCtrl.text,
           valorTotal: double.tryParse(_valorCtrl.text),
-          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+          fechaCreacion: DateTime.now(),
+          proyectoId: ProyectoActual.id ?? 0,
+          usuarioId: UsuarioActual.id ?? 0,
           items: _itemsSeleccionados,
         );
         exito = await service.registrarFacturaManual(f);
@@ -378,10 +393,12 @@ class _FacturaSheetState extends State<FacturaSheet> {
                     // Botón de prueba para simular datos devueltos por IA
                     final facturaExtraida = Factura(
                       proyectoId: 1,
+                      usuarioId: UsuarioActual.id ?? 0,
                       proveedor: 'Ferretería El Constructor (Leído por IA)',
                       numeroFactura: 'FAC-88392',
                       fecha: DateTime.now().subtract(const Duration(days: 1)),
                       valorTotal: 1545000.0,
+                      fechaCreacion: DateTime.now(),
                       observaciones: 'Extraído vía OCR',
                     );
 
@@ -390,9 +407,10 @@ class _FacturaSheetState extends State<FacturaSheet> {
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
-                      builder: (_) => build_check_app_ocr_review.FacturaOcrReviewSheet(
-                        facturaExtraida: facturaExtraida,
-                      ),
+                      builder: (_) =>
+                          build_check_app_ocr_review.FacturaOcrReviewSheet(
+                            facturaExtraida: facturaExtraida,
+                          ),
                     );
                   },
                   icon: const Icon(Icons.science, color: Colors.orange),

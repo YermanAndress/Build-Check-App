@@ -1,13 +1,19 @@
-import 'package:build_check_app/models/proyecto_model.dart';
-import 'package:build_check_app/services/proyecto_service.dart';
-import 'package:build_check_app/services/role_helper.dart';
-import 'package:build_check_app/ui/features/proyectos/screen/editar_proyecto_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:build_check_app/models/proyecto_model.dart';
+import 'package:build_check_app/services/proyecto_service.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/editar_proyecto_page.dart';
+
 class ProyectoDetails extends StatefulWidget {
   final int proyectoId;
-  const ProyectoDetails({super.key, required this.proyectoId});
+  final String? rolEnProyecto;
+  const ProyectoDetails({
+    super.key,
+    required this.proyectoId,
+    this.rolEnProyecto,
+  });
 
   @override
   State<ProyectoDetails> createState() => _ProyectoDetailsState();
@@ -20,18 +26,16 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
   String? error;
   Proyecto? proyecto;
 
-  bool _puedeGestionar = false;
+  bool get _esAdmin =>
+      widget.rolEnProyecto == 'ROLE_OWNER' ||
+      widget.rolEnProyecto == 'ROLE_ADMIN';
+
+  bool get _esOwner => widget.rolEnProyecto == 'ROLE_OWNER';
 
   @override
   void initState() {
     super.initState();
     _cargar();
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeGestionarProyectos();
-    if (mounted) setState(() => _puedeGestionar = puede);
   }
 
   Future<void> _cargar() async {
@@ -39,13 +43,11 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
       cargando = true;
       error = null;
     });
-
     try {
       proyecto = await _service.obtenerProyecto(widget.proyectoId);
     } catch (e) {
       error = e.toString();
     }
-
     setState(() => cargando = false);
   }
 
@@ -58,32 +60,41 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (proyecto != null && _puedeGestionar)
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () {
+          if (proyecto != null) ...[
+            if (_esAdmin)
+              IconButton(
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                tooltip: 'Administrar proyecto',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminProyectoPage(proyecto: proyecto!),
+                  ),
+                ).then((_) => _cargar()),
+              ),
+            if (_esAdmin)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () =>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EditarProyectoPage(proyecto: proyecto!),
+                        builder: (_) => EditarProyectoPage(
+                          proyecto: proyecto!,
+                          rolEnProyecto: widget.rolEnProyecto,
+                        ),
                       ),
-                    ).then((value) {
-                      if (value == true) {
-                        _cargar();
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: _confirmarEliminar,
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
+                    ).then((v) {
+                      if (v == true) _cargar();
+                    }),
+              ),
+            if (_esOwner)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: _confirmarEliminar,
+              ),
+            const SizedBox(width: 4),
+          ],
         ],
       ),
       body: Padding(padding: const EdgeInsets.all(16), child: _buildBody()),
@@ -109,6 +120,7 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         ),
       );
     }
+
     final p = proyecto!;
     return SingleChildScrollView(
       child: Column(
@@ -121,7 +133,7 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 20,
                   ),
                 ],
@@ -133,7 +145,37 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
               ),
             ),
           ),
-          const SizedBox(height: 30),
+          if (widget.rolEnProyecto != null) ...[
+            const SizedBox(height: 12),
+            _RolBadge(rol: widget.rolEnProyecto!),
+          ],
+          if (!_esAdmin && widget.rolEnProyecto != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue, width: 0.5),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text(
+                    'No tienes permisos para administrar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -155,11 +197,15 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
                   Icons.attach_money,
                 ),
                 const Divider(height: 30),
-                _info("Estado", p.estado, Icons.flag_outlined),
+                _info(
+                  "Estado",
+                  p.estado.replaceAll('_', ' '),
+                  Icons.flag_outlined,
+                ),
                 const Divider(height: 30),
                 _info(
                   "Fecha de creacion",
-                  DateFormat('dd/MM/yyyy HH:mm').format(p.fechaCreacionDate),
+                  DateFormat('dd/MM/yyyy HH:mm').format(p.fechaCreacion),
                   Icons.calendar_today_outlined,
                 ),
               ],
@@ -185,7 +231,7 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(icon, size: 20, color: Color(0xFF4CAF50)),
+            Icon(icon, size: 20, color: const Color(0xFF4CAF50)),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -217,12 +263,74 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              final ok = await _service.eliminarProyecto(widget.proyectoId);
-              Navigator.pop(context, true);
+              try {
+                await _service.eliminarProyecto(widget.proyectoId);
+                if (mounted) {
+                  Navigator.pop(context, true);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Proyecto eliminado exitosamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RolBadge extends StatelessWidget {
+  final String rol;
+  const _RolBadge({required this.rol});
+
+  Color get _color {
+    switch (rol) {
+      case 'ROLE_OWNER':
+        return const Color(0xFFFF9800);
+      case 'ROLE_ADMIN':
+        return const Color(0xFF2196F3);
+      case 'ROLE_ALMACENISTA':
+        return const Color(0xFF4CAF50);
+      case 'ROLE_DIRECTOR_OBRA':
+        return const Color(0xFF9C27B0);
+      case 'ROLE_RESIDENTE':
+        return const Color(0xFF00BCD4);
+      default:
+        return const Color(0xFF9E9E9E);
+    }
+  }
+
+  String get _label => rol.replaceAll('ROLE_', '').replaceAll('_', ' ');
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: _color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'Tu rol: $_label',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

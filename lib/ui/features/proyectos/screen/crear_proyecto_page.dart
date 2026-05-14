@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
+
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/proyecto_service.dart';
-import 'package:flutter/material.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/services/secure_storage.dart';
 
 class CrearProyectoPage extends StatefulWidget {
   const CrearProyectoPage({super.key});
@@ -15,9 +18,16 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
   final _descripcionCtrl = TextEditingController();
   final _ubicacionCtrl = TextEditingController();
   final _presupuestoCtrl = TextEditingController();
-  String _estadoSeleccionado = "Planificacion";
+  String _estadoSeleccionado = "Pendiente";
 
   bool enviando = false;
+
+  static const List<String> estadosDisponibles = [
+    "Pendiente",
+    "Planificacion",
+    "Ejecucion",
+    "Terminado",
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +50,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 20,
                     ),
                   ],
@@ -99,7 +109,7 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                     validator: (v) => v!.isEmpty ? "Requerido" : null,
                   ),
                   DropdownButtonFormField<String>(
-                    value: _estadoSeleccionado,
+                    initialValue: _estadoSeleccionado,
                     decoration: const InputDecoration(
                       labelText: "Estado",
                       prefixIcon: Icon(
@@ -107,20 +117,24 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
                         color: Colors.blueGrey,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: "Planificacion",
-                        child: Text("Planificacion"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Ejecucion",
-                        child: Text("Ejecucion"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Terminado",
-                        child: Text("Terminado"),
-                      ),
-                    ],
+                    items: estadosDisponibles
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(
+                              e == "Pendiente"
+                                  ? "Pendiente"
+                                  : e == "Planificacion"
+                                  ? "Planificacion"
+                                  : e == "Ejecucion"
+                                  ? "Ejecucion"
+                                  : e == "Terminado"
+                                  ? "Terminado"
+                                  : "Ejecucion",
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (value) {
                       setState(() => _estadoSeleccionado = value!);
                     },
@@ -165,18 +179,45 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => enviando = true);
-    final service = ProyectoService();
-    final proyecto = Proyecto(
-      id: null,
-      nombre: _nombreCtrl.text,
-      descripcion: _descripcionCtrl.text,
-      ubicacion: _ubicacionCtrl.text,
-      presupuesto: double.parse(_presupuestoCtrl.text),
-      estado: _estadoSeleccionado,
-      fechaCreacion: "",
-    );
-    final ok = await service.crearProyecto(proyecto);
-    if (ok && mounted) Navigator.pop(context, true);
-    setState(() => enviando = false);
+    try {
+      debugPrint('🚀 _guardar - Iniciando creación de proyecto');
+      final service = ProyectoService();
+
+      final proyecto = Proyecto(
+        id: null,
+        nombre: _nombreCtrl.text,
+        descripcion: _descripcionCtrl.text,
+        ubicacion: _ubicacionCtrl.text,
+        presupuesto: double.parse(_presupuestoCtrl.text),
+        estado: _estadoSeleccionado,
+        fechaCreacion: DateTime.now(), // Se genera en el servidor
+      );
+
+      debugPrint('🚀 _guardar - Proyecto a crear: ${proyecto.toJson()}');
+
+      final created = await service.crearProyecto(proyecto);
+      debugPrint('🚀 _guardar - Proyecto creado: ${created.toJson()}');
+
+      final resultado = await service.seleccionarProyecto(created.id!);
+      debugPrint('🚀 _guardar - Resultado seleccionar: $resultado');
+
+      if (mounted) {
+        await SecureStorage.save("accessToken", resultado['accessToken']);
+        await ProyectoActual.set(
+          resultado['proyecto_id'],
+          rol: resultado['rol_proyecto'],
+        );
+        if (!mounted) return;
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      debugPrint('❌ _guardar - Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+    if (mounted) setState(() => enviando = false);
   }
 }

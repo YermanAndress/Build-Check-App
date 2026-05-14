@@ -22,7 +22,7 @@ class _RecuperarpasswordPageState extends State<RecuperarpasswordPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Correo de recuperación enviado")),
         );
-        Navigator.pop(context); // volver al login
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

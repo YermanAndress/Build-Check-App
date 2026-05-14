@@ -9,6 +9,7 @@ class CardBase extends StatelessWidget {
   final Widget rightContent;
   final Widget? bottomContent;
   final bool showChevron;
+  final Color? borderColor;
 
   const CardBase({
     required this.icon,
@@ -19,6 +20,7 @@ class CardBase extends StatelessWidget {
     required this.rightContent,
     this.bottomContent,
     this.showChevron = true,
+    this.borderColor,
     super.key,
   });
 
@@ -37,7 +39,7 @@ class CardBase extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        border: Border.all(color: borderColor ?? const Color(0xFFEEEEEE)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -50,7 +52,6 @@ class CardBase extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    // Ícono izquierdo
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -60,10 +61,8 @@ class CardBase extends StatelessWidget {
                       child: Icon(icon, color: iconColor),
                     ),
                     const SizedBox(width: 16),
-                    // Contenido izquierdo (expansible)
                     Expanded(child: leftContent),
                     const SizedBox(width: 8),
-                    // Contenido derecho
                     rightContent,
                     if (showChevron) ...[
                       const SizedBox(width: 8),

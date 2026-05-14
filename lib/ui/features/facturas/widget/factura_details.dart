@@ -30,7 +30,7 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
   }
 
   Future<void> _cargarPermiso() async {
-    final puede = await RoleHelper.puedeGestionarFacturas();
+    final puede = RoleHelper.puedeGestionarFacturas();
     if (mounted) setState(() => _puedeEditar = puede);
   }
 

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 import 'package:build_check_app/core/api_config.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/models/factura_model.dart';
 
 class FacturaService {
@@ -37,13 +38,16 @@ class FacturaService {
         Uri.parse(ApiConfig.facturas),
       );
       request.headers["Authorization"] = "Bearer $token";
+      final proyectoIdHeader = ProyectoActual.id;
+      if (proyectoIdHeader != null) {
+        request.headers["X-Proyecto-Id"] = proyectoIdHeader.toString();
+      }
 
       request.fields['fecha'] =
           "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
       request.fields['proyectoId'] = proyectoId.toString();
       request.fields['modo'] = 'ocr';
 
-      // Adjuntar la imagen
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
@@ -64,19 +68,22 @@ class FacturaService {
 
   Future<List<Factura>> obtenerFacturas() async {
     try {
+      final proyectoId = ProyectoActual.id;
+      final url = proyectoId != null
+          ? ApiConfig.facturasPorProyecto(proyectoId)
+          : ApiConfig.facturas;
+
       final response = await HttpInterceptor.send(() async {
-        return http.get(
-          Uri.parse(ApiConfig.facturas),
-          headers: await AuthHeader.getHeaders(),
-        );
+        return http.get(Uri.parse(url), headers: await AuthHeader.getHeaders());
       });
 
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
         if (decodedData is Map<String, dynamic> &&
             decodedData.containsKey('facturas')) {
-          final List listado = decodedData['facturas'];
-          return listado.map((json) => Factura.fromJson(json)).toList();
+          return (decodedData['facturas'] as List)
+              .map((json) => Factura.fromJson(json))
+              .toList();
         }
       }
       return [];

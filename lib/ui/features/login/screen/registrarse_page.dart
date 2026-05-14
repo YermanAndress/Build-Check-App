@@ -26,13 +26,12 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
         nombre: nombreController.text.trim(),
         correo: correoController.text.trim(),
         password: passwordController.text.trim(),
-        rol: selectedRole,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Usuario registrado exitosamente")),
         );
-        Navigator.pop(context); // volver al login
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -87,21 +86,6 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
             ),
 
             const SizedBox(height: 20),
-
-            const Text(
-              "Selecciona tu rol",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-
-            RoleSelector(
-              selectedRole: selectedRole,
-              onSelect: (rol) {
-                setState(() => selectedRole = rol);
-              },
-            ),
-
-            const SizedBox(height: 30),
 
             LoginButton(
               text: "Registrarse",

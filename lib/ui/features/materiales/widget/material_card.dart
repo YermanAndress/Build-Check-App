@@ -11,7 +11,7 @@ class MaterialCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool tieneStock = (material.stockActual ?? 0) > 0;
+    final bool tieneStock = (material.stockActual) > 0;
 
     return CardBase(
       icon: Icons.inventory_2_outlined,
@@ -49,7 +49,7 @@ class MaterialCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            '${material.stockActual ?? 0}',
+            '${material.stockActual}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,

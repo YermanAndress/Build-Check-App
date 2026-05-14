@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/services/secure_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class RefreshService {
@@ -18,8 +19,8 @@ class RefreshService {
       final data = jsonDecode(res.body);
       await SecureStorage.save("accessToken", data["accessToken"]);
       await SecureStorage.save("refreshToken", data["refreshToken"]);
-      print("NUEVO ACCESS TOKEN: ${data['accessToken']}");
-      print("NUEVO REFRESH TOKEN: ${data['refreshToken']}");
+      debugPrint("NUEVO ACCESS TOKEN: ${data['accessToken']}");
+      debugPrint("NUEVO REFRESH TOKEN: ${data['refreshToken']}");
       return true;
     }
     return false;

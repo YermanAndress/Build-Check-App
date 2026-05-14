@@ -17,10 +17,10 @@ class MovimientoCard extends StatelessWidget {
       icon: esEntrada
           ? Icons.arrow_downward_rounded
           : Icons.arrow_upward_rounded,
-      iconBackgroundColor:
-          esEntrada ? const Color(0xFFF0F7F0) : const Color(0xFFFFF3F3),
-      iconColor:
-          esEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE53935),
+      iconBackgroundColor: esEntrada
+          ? const Color(0xFFF0F7F0)
+          : const Color(0xFFFFF3F3),
+      iconColor: esEntrada ? const Color(0xFF4CAF50) : const Color(0xFFE53935),
       onTap: () {
         Navigator.push(
           context,
@@ -35,7 +35,7 @@ class MovimientoCard extends StatelessWidget {
           Text(
             movimiento.materialNombre.isNotEmpty
                 ? movimiento.materialNombre
-                : 'Material #${movimiento.materialId ?? '—'}',
+                : 'Material #${movimiento.materialId}',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,

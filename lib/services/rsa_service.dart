@@ -14,7 +14,6 @@ class RsaService {
   String encrypt(String plainText) {
     assert(_publicKey != null, 'Llave pública no cargada');
 
-    // ✅ PKCS1Padding — igual que el backend: RSA/ECB/PKCS1Padding
     final cipher = PKCS1Encoding(RSAEngine())
       ..init(true, PublicKeyParameter<RSAPublicKey>(_publicKey!));
 
@@ -28,7 +27,6 @@ class RsaService {
     final pubKeyBitString = spkiSequence.elements[1] as ASN1BitString;
     final pubKeyBytes = pubKeyBitString.encodedBytes;
 
-    // Buscar el inicio de la secuencia interna (0x30)
     int seqStart = 0;
     for (int i = 0; i < pubKeyBytes.length; i++) {
       if (pubKeyBytes[i] == 0x30) {

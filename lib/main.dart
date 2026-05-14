@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
-import 'ui/main_screen.dart';
-
+import 'package:build_check_app/ui/main_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -27,7 +27,6 @@ class BuildCheckApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       title: 'Build Check',
       debugShowCheckedModeBanner: false,
-
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Roboto',
@@ -37,8 +36,6 @@ class BuildCheckApp extends StatelessWidget {
           primary: const Color(0xFF4CAF50),
         ),
       ),
-
-      //Develop
       home: FutureBuilder<String?>(
         future: SecureStorage.read("accessToken"),
         builder: (context, snapshot) {
@@ -48,7 +45,7 @@ class BuildCheckApp extends StatelessWidget {
             );
           }
           final token = snapshot.data;
-          if (token == null) {
+          if (token == null || token.isEmpty) {
             return const Loginpage();
           } else {
             return const MainScreen();

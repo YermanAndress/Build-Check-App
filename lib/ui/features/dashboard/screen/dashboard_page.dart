@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
 import 'package:flutter/material.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 
 import 'package:build_check_app/ui/shared/sheet/factura_sheet.dart';
 import 'package:build_check_app/ui/shared/sheet/movimiento_sheet.dart';
@@ -14,9 +16,11 @@ import 'package:build_check_app/ui/shared/widgets/stat_card.dart';
 
 import 'package:build_check_app/services/movimiento_service.dart';
 import 'package:build_check_app/services/material_service.dart';
+import 'package:build_check_app/services/proyecto_service.dart';
 
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -49,8 +53,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _cargarPermisos() async {
-    final registrar = await RoleHelper.puedeRegistrarMovimientos();
-    final facturas = await RoleHelper.puedeGestionarFacturas();
+    final registrar = RoleHelper.puedeRegistrarMovimientos();
+    final facturas = RoleHelper.puedeGestionarFacturas();
     if (mounted) {
       setState(() {
         _puedeRegistrar = registrar;
@@ -61,6 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final MovimientoService _movimientoService = MovimientoService();
   final MaterialService _materialService = MaterialService();
+  final ProyectoService _proyectoService = ProyectoService();
 
   Future<void> _cargarStatsHoy() async {
     if (!mounted) return;
@@ -115,7 +120,7 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (_) => const MovimientoSheet(tipo: 'ENTRADA'),
     ).then((_) async {
       if (!mounted) return;
-      MaterialService.invalidateCache();
+      MaterialService.invalidarCache();
       await _cargarStatsHoy();
       await _materialService.obtenerAlertas();
     });
@@ -129,10 +134,9 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (_) => const MovimientoSheet(tipo: 'SALIDA'),
     ).then((_) async {
       if (!mounted) return;
-      MaterialService.invalidateCache();
+      MaterialService.invalidarCache();
       await _cargarStatsHoy();
-      await _materialService
-          .obtenerAlertas(); // refrescar stock bajo tras una salida
+      await _materialService.obtenerAlertas();
     });
   }
 
@@ -143,13 +147,6 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => FacturaSheet(),
     );
-  }
-
-  Future<String?> rolUsuario() async {
-    final usuarioJson = await SecureStorage.read("usuario");
-    if (usuarioJson == null) return null;
-    final usuario = jsonDecode(usuarioJson);
-    return usuario["rol"];
   }
 
   @override
@@ -181,48 +178,108 @@ class _DashboardPageState extends State<DashboardPage> {
               color: Color(0xFF555555),
             ),
             onSelected: (value) async {
-              if (value == 'logout') {
+              if (value == 'admin') {
+                final prefs = await SharedPreferences.getInstance();
+                if (!context.mounted) return;
+                final proyectoId = prefs.getInt("proyectoActual");
+                if (proyectoId != null) {
+                  try {
+                    final proyecto = await _proyectoService.obtenerProyecto(
+                      proyectoId,
+                    );
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminProyectoPage(proyecto: proyecto),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                  }
+                }
+              } else if (value == 'logout') {
+                final prefs = await SharedPreferences.getInstance();
+                if (!context.mounted) return;
+                await prefs.remove("usuario");
                 await SecureStorage.clear();
+                await ProyectoActual.limpiar();
+                if (!context.mounted) return;
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const Loginpage()),
                 );
               }
             },
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem(
-                  enabled: false,
-                  child: FutureBuilder<String?>(
-                    future: SecureStorage.read("usuario"),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data == null)
-                        return const SizedBox();
-                      final usuario = jsonDecode(snapshot.data!);
-                      final nombre = usuario["nombre"] ?? "Usuario";
-                      return Text(
-                        "Hola, $nombre",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: FutureBuilder(
+                  future: SharedPreferences.getInstance(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox();
+                    final prefs = snapshot.data!;
+                    final usuarioJson = prefs.getString("usuario");
+                    if (usuarioJson == null) return const SizedBox();
+                    final usuario = jsonDecode(usuarioJson);
+                    final nombre = usuario["nombre"] ?? "Usuario";
+                    final rolProyecto = ProyectoActual.rolEnProyecto;
+                    final rolLabel = rolProyecto
+                        ?.replaceAll('ROLE_', '')
+                        .replaceAll('_', ' ');
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hola, $nombre 👋",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
-                      );
-                    },
-                  ),
+                        if (rolLabel != null) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF4CAF50,
+                              ).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              rolLabel,
+                              style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text("Cerrar sesion"),
-                    ],
-                  ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red),
+                    SizedBox(width: 10),
+                    Text("Cerrar sesión", style: TextStyle(color: Colors.red)),
+                  ],
                 ),
-              ];
-            },
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],
