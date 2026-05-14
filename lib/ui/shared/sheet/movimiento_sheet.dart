@@ -1,15 +1,21 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
+import 'package:build_check_app/main.dart';
+import 'package:build_check_app/services/auth_header.dart';
+import 'package:build_check_app/services/http_handler.dart';
+import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
-import '../widgets/form_utils.dart';
-import '../../../core/api_config.dart';
-import '../../../models/material_model.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/core/api_config.dart';
 
 class MovimientoSheet extends StatefulWidget {
-  final String tipo; // 'ENTRADA' o 'SALIDA'
+  final String tipo;
   const MovimientoSheet({super.key, required this.tipo});
 
   @override
@@ -42,8 +48,6 @@ class MovimientoSheetState extends State<MovimientoSheet> {
     super.dispose();
   }
 
-  // --- LÓGICA DE DATOS ---
-
   Future<void> _seleccionarFoto() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
@@ -71,7 +75,16 @@ class MovimientoSheetState extends State<MovimientoSheet> {
 
   Future<void> _cargarMateriales() async {
     try {
-      final res = await http.get(Uri.parse(ApiConfig.materiales));
+      final res = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.materiales),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return;
+      }
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -79,6 +92,11 @@ class MovimientoSheetState extends State<MovimientoSheet> {
             : (decoded['materiales'] ?? []);
         setState(() {
           _materiales = rawLista.map((e) => MaterialItem.fromJson(e)).toList();
+          _loadingMateriales = false;
+        });
+      } else {
+        setState(() {
+          errorMateriales = 'Error ${res.statusCode}';
           _loadingMateriales = false;
         });
       }
@@ -102,19 +120,25 @@ class MovimientoSheetState extends State<MovimientoSheet> {
       'cantidad': double.parse(_cantidadCtrl.text.trim()),
       'fecha':
           "${_fecha.year}-${_fecha.month.toString().padLeft(2, '0')}-${_fecha.day.toString().padLeft(2, '0')}",
-      'usuarioId': 1,
-      'proyectoId': 1,
+      'usuarioId': UsuarioActual.id ?? 0,
+      'proyectoId': ProyectoActual.id ?? 0,
       'materialId': _materialSeleccionado!.id,
     });
 
     try {
-      final res = await http.post(
-        Uri.parse(ApiConfig.movimientos),
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
+      final res = await HttpInterceptor.send(() async {
+        return http.post(
+          Uri.parse(ApiConfig.movimientos),
+          headers: await AuthHeader.getHeaders(),
+          body: body,
+        );
+      });
       if (!mounted) return;
 
+      if (res.statusCode == 401) {
+        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+        return;
+      }
       if (res.statusCode == 200 || res.statusCode == 201) {
         Navigator.pop(context, true);
       } else {

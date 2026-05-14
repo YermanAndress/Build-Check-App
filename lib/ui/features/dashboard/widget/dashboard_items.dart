@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// ── QUICK ACTION BUTTON ──
 class QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -52,7 +51,6 @@ class QuickActionButton extends StatelessWidget {
   }
 }
 
-// ── MOVEMENT ITEM ──
 enum MovementType { entrada, salida }
 
 class MovementItem extends StatelessWidget {

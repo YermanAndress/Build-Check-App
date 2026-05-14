@@ -1,14 +1,15 @@
 import 'dart:convert';
+import 'package:build_check_app/core/usuario_actual.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/select_proyecto_page.dart';
+import 'package:flutter/material.dart';
 
-import 'package:build_check_app/core/api_config.dart';
-import 'package:build_check_app/services/rsa_service.dart';
+import 'package:build_check_app/services/secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:build_check_app/ui/features/login/screen/recuperar_password_page.dart';
 import 'package:build_check_app/ui/features/login/screen/registrarse_page.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../widget/login_items.dart';
-import '../../../../services/login_service.dart';
-import '../../../main_screen.dart';
+import 'package:build_check_app/ui/features/login/widget/login_items.dart';
+import 'package:build_check_app/services/login_service.dart';
+import 'package:build_check_app/core/proyecto_actual.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -28,16 +29,45 @@ class _LoginpageState extends State<Loginpage> {
     final auth = LoginService();
 
     try {
-      await auth.login(
+      final data = await auth.login(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      // Extraer usuario desde la respuesta (ajusta según tu backend)
+      final usuarioData = data['usuario'] as Map<String, dynamic>?;
+      if (usuarioData == null) {
+        throw Exception('No se recibieron datos del usuario');
+      }
+
+      final usuarioId =
+          usuarioData['id'] as int?; // o (usuarioData['id'] as num).toInt()
+      final correo = usuarioData['correo'] as String?;
+
+      if (usuarioId == null) {
+        throw Exception('ID de usuario no encontrado en la respuesta');
+      }
+
+      await UsuarioActual.set(usuarioId, correo ?? emailController.text);
+
+      // Guardar tokens
+      await SecureStorage.save("accessToken", data['accessToken']);
+      await SecureStorage.save("refreshToken", data['refreshToken']);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("usuario", jsonEncode(usuarioData));
+
+      await ProyectoActual.limpiar();
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SelectProyectoPage()),
+        );
+      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
       );

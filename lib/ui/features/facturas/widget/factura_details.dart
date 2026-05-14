@@ -1,7 +1,8 @@
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../models/factura_model.dart';
+import 'package:build_check_app/models/factura_model.dart';
 
 class FacturaDetailsScreen extends StatefulWidget {
   final Factura factura;
@@ -17,6 +18,7 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
   late TextEditingController _numeroCtrl;
   late TextEditingController _obsCtrl;
   bool _isSaving = false;
+  bool _puedeEditar = false;
 
   @override
   void initState() {
@@ -24,6 +26,12 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
     _proveedorCtrl = TextEditingController(text: widget.factura.proveedor);
     _numeroCtrl = TextEditingController(text: widget.factura.numeroFactura);
     _obsCtrl = TextEditingController(text: widget.factura.observaciones);
+    _cargarPermiso();
+  }
+
+  Future<void> _cargarPermiso() async {
+    final puede = RoleHelper.puedeGestionarFacturas();
+    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   Future<void> _guardarCambios() async {
@@ -55,10 +63,11 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar Factura' : 'Detalle de Factura'),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
-            onPressed: () => setState(() => _isEditing = !_isEditing),
-          ),
+          if (_puedeEditar)
+            IconButton(
+              icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined),
+              onPressed: () => setState(() => _isEditing = !_isEditing),
+            ),
         ],
       ),
       body: SingleChildScrollView(

@@ -132,6 +132,9 @@ class FotoSelector extends StatelessWidget {
   final XFile? archivo;
   final VoidCallback onSelect;
   final VoidCallback onRemove;
+  final VoidCallback? onCamera;
+  final bool isLoading;
+  final String? sourceLabel;
   final String placeholder;
   final double height;
 
@@ -141,41 +144,164 @@ class FotoSelector extends StatelessWidget {
     required this.archivo,
     required this.onSelect,
     required this.onRemove,
-    this.placeholder = 'Toca para agregar una foto',
-    this.height = 120,
+    this.onCamera,
+    this.isLoading = false,
+    this.sourceLabel,
+    this.placeholder = 'Seleccionar foto',
+    this.height = 140,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (bytes == null) {
-      return GestureDetector(
-        onTap: onSelect,
-        child: Container(
-          width: double.infinity,
-          height: height,
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFCCCCCC)),
-            borderRadius: BorderRadius.circular(12),
-            color: const Color(0xFFFAFAFA),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 32,
-                color: Color(0xFFBBBBBB),
+    // --- Estado de carga (spinner) ---
+    if (isLoading) {
+      return Container(
+        width: double.infinity,
+        height: height,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFF0FFF0),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                color: Color(0xFF4CAF50),
+                strokeWidth: 3,
               ),
-              const SizedBox(height: 6),
-              Text(
-                placeholder,
-                style: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
-              ),
-            ],
-          ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Procesando imagen…',
+              style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
+            ),
+          ],
         ),
       );
     }
+
+    // --- Sin imagen: mostrar dos opciones lado a lado ---
+    if (bytes == null) {
+      return Container(
+        width: double.infinity,
+        height: height,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFCCCCCC)),
+          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFFAFAFA),
+        ),
+        child: Row(
+          children: [
+            // --- Lado izquierdo: Cámara ---
+            Expanded(
+              child: GestureDetector(
+                onTap: onCamera,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(11),
+                      bottomLeft: Radius.circular(11),
+                    ),
+                    color: Colors.transparent,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          size: 28,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Tomar foto',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Usar cámara',
+                        style: TextStyle(fontSize: 10, color: Color(0xFFAAAAAA)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // --- Divisor central ---
+            Container(
+              width: 1,
+              height: height * 0.55,
+              color: const Color(0xFFDDDDDD),
+            ),
+
+            // --- Lado derecho: Galería ---
+            Expanded(
+              child: GestureDetector(
+                onTap: onSelect,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(11),
+                      bottomRight: Radius.circular(11),
+                    ),
+                    color: Colors.transparent,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_rounded,
+                          size: 28,
+                          color: Color(0xFF2196F3),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        placeholder,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2196F3),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Desde galería',
+                        style: TextStyle(fontSize: 10, color: Color(0xFFAAAAAA)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // --- Con imagen: previsualización con badge de origen ---
     return Stack(
       children: [
         ClipRRect(
@@ -187,6 +313,7 @@ class FotoSelector extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
+        // Botón para quitar la imagen
         Positioned(
           top: 8,
           right: 8,
@@ -202,22 +329,60 @@ class FotoSelector extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          bottom: 8,
-          left: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              archivo!.name,
-              style: const TextStyle(color: Colors.white, fontSize: 11),
-              overflow: TextOverflow.ellipsis,
+        // Badge de origen (Cámara o Galería)
+        if (sourceLabel != null)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: sourceLabel == 'Cámara'
+                    ? const Color(0xFF4CAF50).withValues(alpha: 0.85)
+                    : const Color(0xFF2196F3).withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    sourceLabel == 'Cámara'
+                        ? Icons.camera_alt_rounded
+                        : Icons.photo_library_rounded,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    sourceLabel!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        // Nombre del archivo
+        if (archivo != null)
+          Positioned(
+            bottom: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                archivo!.name,
+                style: const TextStyle(color: Colors.white, fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
       ],
     );
   }

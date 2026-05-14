@@ -9,8 +9,8 @@ class ApiConfig {
   static const String baseUrl =
       'http://localhost:8080/api'; // ← WEB (Edge/Chrome)
 
-  // static const String baseUrl =
-  //     'http://10.0.2.2:8080/api'; // ← Emulador Android
+  //static const String baseUrl =
+  //     'http://192.168.1.4:8080/api'; // ← Emulador Android
 
   // static const String baseUrl =
   //     'http://192.168.101.5:8080/api'; // ← Dispositivo físico
@@ -20,4 +20,15 @@ class ApiConfig {
   static const String facturas = '$baseUrl/facturas-service/facturas';
   static const String alertas = '$baseUrl/materiales-service/alertas';
   static const String usuarios = '$baseUrl/usuarios-service';
+  static const String proyectos = '$baseUrl/proyecto-service/proyectos';
+
+  // ── Endpoints filtrados por proyecto
+  static String materialesPorProyecto(int id) =>
+      '$baseUrl/materiales-service/proyecto/$id/materiales';
+  static String movimientosPorProyecto(int id) =>
+      '$baseUrl/movimientos-service/proyecto/$id/movimientos';
+  static String facturasPorProyecto(int id) =>
+      '$baseUrl/facturas-service/proyecto/$id/facturas';
+  static String alertasPorProyecto(int id) =>
+      '$baseUrl/materiales-service/proyecto/$id/alertas';
 }

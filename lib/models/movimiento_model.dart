@@ -1,20 +1,29 @@
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
+
 class MovimientoResumen {
+  final int id;
   final String tipoMovimiento;
   final DateTime fecha;
   final double cantidad;
-  final int? materialId;
+  final int usuarioId;
+  final int materialId;
+  final int proyectoId;
   final String materialNombre;
   final String unidadMedida;
   final DateTime fechaCreacion;
 
   const MovimientoResumen({
+    required this.id,
     required this.tipoMovimiento,
     required this.fecha,
     required this.cantidad,
     required this.fechaCreacion,
-    this.materialId,
-    this.materialNombre = '',
-    this.unidadMedida = '',
+    required this.usuarioId,
+    required this.materialId,
+    required this.proyectoId,
+    required this.materialNombre,
+    required this.unidadMedida,
   });
 
   String get descripcionFormateada {
@@ -23,23 +32,39 @@ class MovimientoResumen {
   }
 
   factory MovimientoResumen.fromJson(Map<String, dynamic> json) {
+    // Obtener objetos anidados
+    final material = json['material'] as Map<String, dynamic>?;
+
+    final int materialId = (material?['id'] as num?)?.toInt() ?? 0;
+    final String materialNombre =
+        material?['nombre']?.toString() ?? 'Sin nombre';
+    final String unidadMedida = material?['unidadMedida']?.toString() ?? '';
+
     return MovimientoResumen(
-      tipoMovimiento: json['tipoMovimiento'] ?? '',
+      id: (json['id'] as num).toInt(),
+      tipoMovimiento: json['tipoMovimiento'].toString(),
       fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime(2000),
       fechaCreacion:
           DateTime.tryParse(json['fechaCreacion'] ?? '') ?? DateTime(2000),
-      cantidad: (json['cantidad'] as num?)?.toDouble() ?? 0,
-      materialId: json['materialId'] as int?,
+      cantidad: (json['cantidad'] as num).toDouble(),
+      materialId: materialId,
+      proyectoId: ProyectoActual.id ?? 0,
+      usuarioId: UsuarioActual.id ?? 0,
+      materialNombre: materialNombre,
+      unidadMedida: unidadMedida,
     );
   }
 
   MovimientoResumen conMaterial(String nombre, String unidad) =>
       MovimientoResumen(
+        id: id,
         tipoMovimiento: tipoMovimiento,
         fecha: fecha,
         fechaCreacion: fechaCreacion,
         cantidad: cantidad,
+        usuarioId: UsuarioActual.id ?? 0,
         materialId: materialId,
+        proyectoId: ProyectoActual.id ?? 0,
         materialNombre: nombre,
         unidadMedida: unidad,
       );

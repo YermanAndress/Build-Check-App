@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../models/material_model.dart';
-import '../widgets/form_utils.dart';
+
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
 
 class StockBajoSheet extends StatelessWidget {
   final List<AlertaMaterial> alertas;
@@ -43,7 +44,6 @@ class StockBajoSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ── Cuerpo del Sheet ──
           if (cargando)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
@@ -117,7 +117,6 @@ class AlertaItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Icono
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -131,7 +130,6 @@ class AlertaItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +151,6 @@ class AlertaItem extends StatelessWidget {
               ],
             ),
           ),
-          // Mensaje de alerta
           Text(
             alerta.mensaje,
             style: const TextStyle(

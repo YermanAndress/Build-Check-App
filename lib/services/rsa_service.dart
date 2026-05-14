@@ -14,7 +14,6 @@ class RsaService {
   String encrypt(String plainText) {
     assert(_publicKey != null, 'Llave pública no cargada');
 
-    // ✅ PKCS1Padding — igual que el backend: RSA/ECB/PKCS1Padding
     final cipher = PKCS1Encoding(RSAEngine())
       ..init(true, PublicKeyParameter<RSAPublicKey>(_publicKey!));
 
@@ -25,10 +24,9 @@ class RsaService {
 
   RSAPublicKey _parsePublicKey(Uint8List bytes) {
     final spkiSequence = ASN1Parser(bytes).nextObject() as ASN1Sequence;
-    final pubKeyBitString = spkiSequence.elements![1] as ASN1BitString;
-    final pubKeyBytes = pubKeyBitString.encodedBytes!;
+    final pubKeyBitString = spkiSequence.elements[1] as ASN1BitString;
+    final pubKeyBytes = pubKeyBitString.encodedBytes;
 
-    // Buscar el inicio de la secuencia interna (0x30)
     int seqStart = 0;
     for (int i = 0; i < pubKeyBytes.length; i++) {
       if (pubKeyBytes[i] == 0x30) {
@@ -37,12 +35,14 @@ class RsaService {
       }
     }
 
-    final innerSeq = ASN1Parser(
-      Uint8List.fromList(pubKeyBytes.sublist(seqStart)),
-    ).nextObject() as ASN1Sequence;
+    final innerSeq =
+        ASN1Parser(
+              Uint8List.fromList(pubKeyBytes.sublist(seqStart)),
+            ).nextObject()
+            as ASN1Sequence;
 
-    final modulus  = (innerSeq.elements![0] as ASN1Integer).valueAsBigInteger!;
-    final exponent = (innerSeq.elements![1] as ASN1Integer).valueAsBigInteger!;
+    final modulus = (innerSeq.elements[0] as ASN1Integer).valueAsBigInteger;
+    final exponent = (innerSeq.elements[1] as ASN1Integer).valueAsBigInteger;
 
     return RSAPublicKey(modulus, exponent);
   }

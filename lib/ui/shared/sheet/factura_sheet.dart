@@ -1,13 +1,17 @@
 import 'dart:typed_data';
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../widgets/form_utils.dart';
-import '../../../models/factura_model.dart';
-import '../../../models/material_model.dart';
-import '../../../services/factura_service.dart';
-import '../../../services/material_service.dart';
-import '../../../enum/unidad_medida.dart';
+import 'package:build_check_app/models/factura_model.dart';
+import 'package:build_check_app/models/material_model.dart';
+import 'package:build_check_app/services/factura_service.dart';
+import 'package:build_check_app/services/material_service.dart';
+import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/enum/unidad_medida.dart';
+import 'package:build_check_app/ui/shared/sheet/factura_ocr_review_sheet.dart'
+    as build_check_app_ocr_review;
 
 class FacturaSheet extends StatefulWidget {
   const FacturaSheet({super.key});
@@ -21,18 +25,17 @@ class _FacturaSheetState extends State<FacturaSheet> {
   final _formKey = GlobalKey<FormState>();
   final MaterialService _materialService = MaterialService();
 
-  // Controladores
   final TextEditingController _numeroCtrl = TextEditingController();
   final TextEditingController _proveedorCtrl = TextEditingController();
   final TextEditingController _valorCtrl = TextEditingController(text: '0');
   final TextEditingController _observacionesCtrl = TextEditingController();
-  final TextEditingController _proyectoCtrl = TextEditingController(text: '1');
 
   final List<FacturaMaterialItem> _itemsSeleccionados = [];
   final DateTime _fecha = DateTime.now();
   Uint8List? _fotoBytes;
   bool _enviando = false;
-  UnidadMedida _unidadSeleccionada = UnidadMedida.UNIDAD;
+  bool _cargandoImagen = false;
+  String? _fotoOrigen;
 
   double get _totalCalculado => _itemsSeleccionados.fold(
     0.0,
@@ -45,12 +48,22 @@ class _FacturaSheetState extends State<FacturaSheet> {
     _proveedorCtrl.dispose();
     _valorCtrl.dispose();
     _observacionesCtrl.dispose();
-    _proyectoCtrl.dispose();
     super.dispose();
   }
 
-  // --- LÓGICA DE AGREGAR ---
-  void _agregarMaterial(int id, double cant, double precio, String nombre) {
+  void _agregarMaterial(
+    int? id,
+    double cant,
+    double precio,
+    String nombre,
+    UnidadMedida unidad,
+    int? usuarioId,
+    DateTime fechaCreacion,
+  ) {
+    if (usuarioId == null) {
+      _mostrarSnack('Usuario no autenticado', isError: true);
+      return;
+    }
     setState(() {
       _itemsSeleccionados.add(
         FacturaMaterialItem(
@@ -58,6 +71,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
           nombre: nombre,
           cantidad: cant,
           precioUnitario: precio,
+          unidadMedida: unidad,
+          usuarioId: usuarioId,
+          fechaCreacion: fechaCreacion,
         ),
       );
       _valorCtrl.text = _totalCalculado.toStringAsFixed(0);
@@ -65,7 +81,11 @@ class _FacturaSheetState extends State<FacturaSheet> {
     _mostrarSnack('Agregado: $nombre');
   }
 
-  // --- DIÁLOGOS DE SELECCIÓN ---
+  @override
+  void initState() {
+    super.initState();
+  }
+
   void _mostrarOpcionesMaterial() {
     showModalBottomSheet(
       context: context,
@@ -141,13 +161,14 @@ class _FacturaSheetState extends State<FacturaSheet> {
                       itemBuilder: (context, i) => ListTile(
                         title: Text(filtrados[i].nombre),
                         subtitle: Text(
-                          "Stock: ${filtrados[i].stockActual ?? 0} ${filtrados[i].unidadMedida}",
+                          "Stock: ${filtrados[i].stockActual} ${filtrados[i].unidadMedida}",
                         ),
                         onTap: () {
                           Navigator.pop(context);
                           _pedirCantidades(
                             filtrados[i].id,
                             filtrados[i].nombre,
+                            filtrados[i].unidadMedida,
                           );
                         },
                       ),
@@ -162,7 +183,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  void _pedirCantidades(int id, String nombre) {
+  void _pedirCantidades(int id, String nombre, String unidadMedidaStr) {
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
     showDialog(
@@ -193,6 +214,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   double.parse(cCtrl.text),
                   double.parse(pCtrl.text),
                   nombre,
+                  UnidadMedida.values.byName(unidadMedidaStr),
+                  UsuarioActual.id,
+                  DateTime.now(),
                 );
                 Navigator.pop(context);
               }
@@ -208,6 +232,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
     final nCtrl = TextEditingController();
     final cCtrl = TextEditingController();
     final pCtrl = TextEditingController();
+    UnidadMedida tempUnidad = UnidadMedida.UNIDAD;
 
     showDialog(
       context: context,
@@ -224,18 +249,16 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<UnidadMedida>(
-                  initialValue: _unidadSeleccionada,
-                  decoration: const InputDecoration(
-                    labelText: "Unidad de Medida",
-                  ),
+                  initialValue: tempUnidad,
                   items: UnidadMedida.values
                       .map(
                         (u) =>
                             DropdownMenuItem(value: u, child: Text(u.nombre)),
                       )
                       .toList(),
-                  onChanged: (val) =>
-                      setDialogState(() => _unidadSeleccionada = val!),
+                  onChanged: (val) => setDialogState(() {
+                    tempUnidad = val!;
+                  }),
                 ),
                 TextField(
                   controller: cCtrl,
@@ -254,29 +277,20 @@ class _FacturaSheetState extends State<FacturaSheet> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 if (nCtrl.text.isEmpty) return;
-
-                final nuevo = await _materialService.crearMaterial(
-                  nCtrl.text,
-                  _unidadSeleccionada.name,
-                  double.tryParse(pCtrl.text) ?? 0,
+                _agregarMaterial(
+                  null,
                   double.tryParse(cCtrl.text) ?? 0,
+                  double.tryParse(pCtrl.text) ?? 0,
+                  nCtrl.text,
+                  tempUnidad,
+                  UsuarioActual.id,
+                  DateTime.now(),
                 );
-
-                if (nuevo != null) {
-                  _agregarMaterial(
-                    nuevo.id,
-                    double.tryParse(cCtrl.text) ?? 0,
-                    double.tryParse(pCtrl.text) ?? 0,
-                    nCtrl.text,
-                  );
-                  if (mounted) Navigator.pop(context);
-                } else {
-                  _mostrarSnack('Error al crear material base', isError: true);
-                }
+                Navigator.pop(context);
               },
-              child: const Text("Crear y Añadir"),
+              child: const Text("Agregar a la factura"),
             ),
           ],
         ),
@@ -306,7 +320,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
         exito = await service.registrarFacturaConFoto(
           bytes: _fotoBytes!,
           fecha: _fecha,
-          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+          proyectoId: ProyectoActual.id ?? 0,
         );
       } else {
         final f = Factura(
@@ -315,7 +329,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
           proveedor: _proveedorCtrl.text,
           observaciones: _observacionesCtrl.text,
           valorTotal: double.tryParse(_valorCtrl.text),
-          proyectoId: int.tryParse(_proyectoCtrl.text) ?? 1,
+          fechaCreacion: DateTime.now(),
+          proyectoId: ProyectoActual.id ?? 0,
+          usuarioId: UsuarioActual.id ?? 0,
           items: _itemsSeleccionados,
         );
         exito = await service.registrarFacturaManual(f);
@@ -353,15 +369,56 @@ class _FacturaSheetState extends State<FacturaSheet> {
             if (_modo == 'foto') ...[
               FotoSelector(
                 bytes: _fotoBytes,
-                onSelect: _seleccionarFoto,
-                onRemove: () => setState(() => _fotoBytes = null),
+                onSelect: _seleccionarFotoGaleria,
+                onCamera: _tomarFotoCamara,
+                onRemove: () => setState(() {
+                  _fotoBytes = null;
+                  _fotoOrigen = null;
+                }),
                 archivo: null,
+                isLoading: _cargandoImagen,
+                sourceLabel: _fotoOrigen,
               ),
               const SizedBox(height: 32),
               BotonEnviar(
                 enviando: _enviando,
                 label: 'REGISTRAR FACTURA',
                 onTap: _enviar,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    // Botón de prueba para simular datos devueltos por IA
+                    final facturaExtraida = Factura(
+                      proyectoId: 1,
+                      usuarioId: UsuarioActual.id ?? 0,
+                      proveedor: 'Ferretería El Constructor (Leído por IA)',
+                      numeroFactura: 'FAC-88392',
+                      fecha: DateTime.now().subtract(const Duration(days: 1)),
+                      valorTotal: 1545000.0,
+                      fechaCreacion: DateTime.now(),
+                      observaciones: 'Extraído vía OCR',
+                    );
+
+                    Navigator.pop(context); // Cierra el sheet actual
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) =>
+                          build_check_app_ocr_review.FacturaOcrReviewSheet(
+                            facturaExtraida: facturaExtraida,
+                          ),
+                    );
+                  },
+                  icon: const Icon(Icons.science, color: Colors.orange),
+                  label: const Text(
+                    "Simular Respuesta de IA (Test)",
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ),
               ),
             ] else ...[
               Form(
@@ -444,15 +501,163 @@ class _FacturaSheetState extends State<FacturaSheet> {
     );
   }
 
-  Future<void> _seleccionarFoto() async {
+  // --- Seleccionar foto desde GALERÍA ---
+  Future<void> _seleccionarFotoGaleria() async {
     final p = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (p != null) {
+      setState(() => _cargandoImagen = true);
       final b = await p.readAsBytes();
-      setState(() => _fotoBytes = b);
+      // Simular procesamiento (cuando haya backend se reemplaza)
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        setState(() {
+          _fotoBytes = b;
+          _fotoOrigen = 'Galería';
+          _cargandoImagen = false;
+        });
+      }
     }
+  }
+
+  // --- Tomar foto desde CÁMARA con previsualización ---
+  Future<void> _tomarFotoCamara() async {
+    final p = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+    if (p != null) {
+      final b = await p.readAsBytes();
+      if (mounted) {
+        _mostrarPrevisualizacion(b);
+      }
+    }
+  }
+
+  // --- Diálogo de previsualización con reintentar ---
+  void _mostrarPrevisualizacion(Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Título
+              const Row(
+                children: [
+                  Icon(Icons.preview_rounded, color: Color(0xFF4CAF50)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Previsualización',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Aviso
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Verifica que la imagen sea legible y no esté borrosa.',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Imagen
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  imageBytes,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Botones
+              Row(
+                children: [
+                  // Reintentar
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _tomarFotoCamara(); // Abrir cámara de nuevo
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Reintentar'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Usar esta foto
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        setState(() => _cargandoImagen = true);
+                        // Simular procesamiento
+                        Future.delayed(const Duration(milliseconds: 800), () {
+                          if (mounted) {
+                            setState(() {
+                              _fotoBytes = imageBytes;
+                              _fotoOrigen = 'Cámara';
+                              _cargandoImagen = false;
+                            });
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      label: const Text('Usar foto'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildModoSelector() {
