@@ -8,19 +8,15 @@ import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:flutter/material.dart';
 
 class HttpInterceptor {
-  static int _retryCount = 0;
   static bool _isRefreshing = false;
-  static const int _maxRetries = 0;
 
   static Future<http.Response> send(
     Future<http.Response> Function() request,
   ) async {
     http.Response response = await request();
 
-    if (response.statusCode == 401 &&
-        !_isRefreshing &&
-        _retryCount < _maxRetries) {
-      _retryCount++;
+    if ((response.statusCode == 401 || response.statusCode == 403) &&
+        !_isRefreshing) {
       _isRefreshing = true;
 
       final newTokens = await _refreshToken();
@@ -30,14 +26,14 @@ class HttpInterceptor {
         _isRefreshing = false;
         return await request();
       } else {
+        _isRefreshing = false;
         await _logout();
         return response;
       }
     }
 
     // Resetear contador después de una respuesta exitosa
-    if (response.statusCode != 401) {
-      _retryCount = 0;
+    if (response.statusCode != 401 && response.statusCode != 403) {
       _isRefreshing = false;
     }
 

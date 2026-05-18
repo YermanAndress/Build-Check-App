@@ -1,3 +1,4 @@
+import 'package:build_check_app/ui/main_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/models/proyecto_model.dart';
@@ -208,7 +209,10 @@ class _CrearProyectoPageState extends State<CrearProyectoPage> {
           rol: resultado['rol_proyecto'],
         );
         if (!mounted) return;
-        Navigator.pop(context, true);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+          (_) => false,
+        );
       }
     } catch (e) {
       debugPrint('❌ _guardar - Error: $e');

@@ -22,19 +22,13 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _puedeEditar = RoleHelper.puedeGestionarMateriales();
     _nombreCtrl = TextEditingController(text: widget.material.nombre);
 
     _unidadSeleccionada = UnidadMedida.values.firstWhere(
       (e) => e.name == widget.material.unidadMedida,
       orElse: () => UnidadMedida.UNIDAD,
     );
-
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = RoleHelper.puedeGestionarMateriales();
-    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   Future<void> _guardarCambios() async {

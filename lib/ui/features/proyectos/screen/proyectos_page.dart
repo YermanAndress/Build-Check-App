@@ -1,3 +1,4 @@
+import 'package:build_check_app/ui/main_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'package:build_check_app/models/proyecto_model.dart';
@@ -29,20 +30,20 @@ class _ProyectosPageState extends State<ProyectosPage> {
   @override
   void initState() {
     super.initState();
+    _puedeCrear = RoleHelper.puedeGestionarProyectos();
     _cargar();
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = RoleHelper.puedeGestionarProyectos();
-    if (mounted) setState(() => _puedeCrear = puede);
   }
 
   Future<void> _seleccionarProyecto(Proyecto proyecto) async {
     try {
       final result = await _service.seleccionarProyecto(proyecto.id!);
-      await ProyectoActual.set(proyecto.id!, rol: result['rol_proyecto']);
       await SecureStorage.save("accessToken", result['accessToken']);
+      await ProyectoActual.set(proyecto.id!, rol: result['rol_proyecto']);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (_) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

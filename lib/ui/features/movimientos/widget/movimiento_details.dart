@@ -25,18 +25,13 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _puedeEditar = RoleHelper.puedeEditarMovimientos();
     _cantidadCtrl = TextEditingController(
       text: widget.movimiento.cantidad % 1 == 0
           ? widget.movimiento.cantidad.toInt().toString()
           : widget.movimiento.cantidad.toString(),
     );
     _tipoSeleccionado = widget.movimiento.tipoMovimiento;
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = RoleHelper.puedeEditarMovimientos();
-    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   @override

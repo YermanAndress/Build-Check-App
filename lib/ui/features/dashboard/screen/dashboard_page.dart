@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
@@ -48,18 +49,19 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    _puedeRegistrar = RoleHelper.puedeRegistrarMovimientos();
+    _puedeFacturas = RoleHelper.puedeGestionarFacturas();
     _cargarStatsHoy();
-    _cargarPermisos();
+    ProyectoActual.notifier.addListener(_onProyectoChanged);
   }
 
-  Future<void> _cargarPermisos() async {
-    final registrar = RoleHelper.puedeRegistrarMovimientos();
-    final facturas = RoleHelper.puedeGestionarFacturas();
+  void _onProyectoChanged() {
     if (mounted) {
       setState(() {
-        _puedeRegistrar = registrar;
-        _puedeFacturas = facturas;
+        _puedeRegistrar = RoleHelper.puedeRegistrarMovimientos();
+        _puedeFacturas = RoleHelper.puedeGestionarFacturas();
       });
+      _cargarStatsHoy();
     }
   }
 
@@ -207,6 +209,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 await prefs.remove("usuario");
                 await SecureStorage.clear();
                 await ProyectoActual.limpiar();
+                await UsuarioActual.limpiar();
                 if (!context.mounted) return;
                 Navigator.pushReplacement(
                   context,
