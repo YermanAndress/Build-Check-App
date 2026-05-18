@@ -41,7 +41,8 @@ class _MovimientosPageState extends State<MovimientosPage> {
       key: ValueKey(_proyectoKey),
       fetchData: () async {
         final mapa = await MovimientoService().obtenerMapaMovimientos();
-        return mapa.values.toList();
+        return mapa.values.toList()
+          ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
       },
       searchPredicate: (movimiento) => movimiento.materialNombre,
       itemBuilder: (movimiento) => MovimientoCard(movimiento: movimiento),

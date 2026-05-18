@@ -17,65 +17,67 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  bool _puedeVerFacturas = false;
-  bool _cargandoRol = true;
-
-  static final List<_TabItem> _tabsBase = [
-    const _TabItem(icon: Icons.home_outlined, label: 'Inicio'),
-    const _TabItem(icon: Icons.folder_outlined, label: 'Proyectos'),
-    const _TabItem(icon: Icons.inventory_2_outlined, label: 'Inventario'),
-    const _TabItem(icon: Icons.swap_vert, label: 'Movimientos'),
-  ];
-  static const _tabFacturas = _TabItem(
-    icon: Icons.bar_chart_outlined,
-    label: 'Facturas',
-  );
 
   @override
   void initState() {
     super.initState();
-    _cargarPermisos();
-    _verificarProyecto();
+    ProyectoActual.notifier.addListener(_onProyectoChanged);
   }
 
-  Future<void> _cargarPermisos() async {
-    final puedeFacturas = RoleHelper.puedeVerFacturas();
+  @override
+  void dispose() {
+    ProyectoActual.notifier.removeListener(_onProyectoChanged);
+    super.dispose();
+  }
+
+  void _onProyectoChanged() {
     if (mounted) {
       setState(() {
-        _puedeVerFacturas = puedeFacturas;
-        _cargandoRol = false;
+        if (_selectedIndex >= _builders.length) {
+          _selectedIndex = 0;
+        }
       });
     }
   }
 
-  Future<void> _verificarProyecto() async {
-    await ProyectoActual.cargar();
-  }
-
-  // Lista de páginas según los tabs visibles
-  List<Widget> get _paginas {
-    final lista = <Widget>[
-      const DashboardPage(),
-      const ProyectosPage(),
-      const MaterialesPage(),
-      const MovimientosPage(),
+  List<Widget Function()> get _builders {
+    final lista = <Widget Function()>[
+      () => const DashboardPage(),
+      () => const ProyectosPage(),
+      () => const MaterialesPage(),
+      () => const MovimientosPage(),
     ];
-    if (_puedeVerFacturas) {
-      lista.add(const FacturasPage());
+    if (RoleHelper.puedeVerFacturas()) {
+      lista.add(() => const FacturasPage());
     }
     return lista;
   }
 
   // Lista de elementos de la barra inferior según los tabs visibles
   List<BottomNavigationBarItem> get _items {
-    final lista = _tabsBase
-        .map((e) => BottomNavigationBarItem(icon: Icon(e.icon), label: e.label))
-        .toList();
-    if (_puedeVerFacturas) {
+    final lista = <BottomNavigationBarItem>[
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.home_outlined),
+        label: "Dashboard",
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.folder_outlined),
+        label: "Proyectos",
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.inventory_2_outlined),
+        label: "Inventario",
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.swap_vert),
+        label: "Movimientos",
+      ),
+    ];
+    if (RoleHelper.puedeVerFacturas()) {
       lista.add(
-        BottomNavigationBarItem(
-          icon: Icon(_tabFacturas.icon),
-          label: _tabFacturas.label,
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          label: "Facturas",
         ),
       );
     }
@@ -84,14 +86,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_cargandoRol) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final index = _selectedIndex.clamp(0, _paginas.length - 1);
+    final builders = _builders;
+    final index = _selectedIndex.clamp(0, builders.length - 1);
 
     return Scaffold(
-      body: IndexedStack(index: index, children: _paginas),
+      body: builders[index](),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -107,10 +106,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-}
-
-class _TabItem {
-  final IconData icon;
-  final String label;
-  const _TabItem({required this.icon, required this.label});
 }

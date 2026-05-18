@@ -1,3 +1,5 @@
+import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,9 @@ void main() async {
   await initializeDateFormatting('es_ES', null);
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  await UsuarioActual.cargar();
+  await ProyectoActual.cargar();
 
   runApp(const BuildCheckApp());
 }

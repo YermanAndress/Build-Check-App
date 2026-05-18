@@ -23,15 +23,10 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _puedeEditar = RoleHelper.puedeGestionarFacturas();
     _proveedorCtrl = TextEditingController(text: widget.factura.proveedor);
     _numeroCtrl = TextEditingController(text: widget.factura.numeroFactura);
     _obsCtrl = TextEditingController(text: widget.factura.observaciones);
-    _cargarPermiso();
-  }
-
-  Future<void> _cargarPermiso() async {
-    final puede = RoleHelper.puedeGestionarFacturas();
-    if (mounted) setState(() => _puedeEditar = puede);
   }
 
   Future<void> _guardarCambios() async {

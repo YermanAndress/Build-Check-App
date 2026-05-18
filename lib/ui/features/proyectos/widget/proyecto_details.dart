@@ -1,3 +1,4 @@
+import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -31,10 +32,12 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
       widget.rolEnProyecto == 'ROLE_ADMIN';
 
   bool get _esOwner => widget.rolEnProyecto == 'ROLE_OWNER';
+  bool _puedeGestionar = false;
 
   @override
   void initState() {
     super.initState();
+    _puedeGestionar = RoleHelper.puedeGestionarProyectos();
     _cargar();
   }
 

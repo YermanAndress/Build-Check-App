@@ -67,11 +67,18 @@ class MovimientoService {
       nuevoMapa[m.id] = m;
     }
 
-    _cacheMapaMovimientos = nuevoMapa;
+    final listaOrdenada = nuevoMapa.values.toList()
+      ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+
+    final mapaOrdenado = <int, MovimientoResumen>{
+      for (var m in listaOrdenada) m.id: m,
+    };
+
+    _cacheMapaMovimientos = mapaOrdenado;
     _ultimaCarga = DateTime.now();
     _proyectoCacheado = proyectoId;
 
-    return nuevoMapa;
+    return mapaOrdenado;
   }
 
   /// Obtiene estadísticas de movimientos de hoy (o historial completo)
