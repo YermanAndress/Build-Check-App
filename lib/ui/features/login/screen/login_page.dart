@@ -48,7 +48,12 @@ class _LoginpageState extends State<Loginpage> {
         throw Exception('ID de usuario no encontrado en la respuesta');
       }
 
-      await UsuarioActual.set(usuarioId, correo ?? emailController.text);
+      await UsuarioActual.set(
+        usuarioId,
+        correo ?? emailController.text,
+        nombre: data['nombre'],
+        rol: data['rol']?.toString(),
+      );
 
       // Guardar tokens
       await SecureStorage.save("accessToken", data['accessToken']);

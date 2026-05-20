@@ -4,6 +4,7 @@ import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
+import 'package:build_check_app/ui/features/perfil/screen/perfil_page.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
 import 'package:flutter/material.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
@@ -180,6 +181,12 @@ class _DashboardPageState extends State<DashboardPage> {
               color: Color(0xFF555555),
             ),
             onSelected: (value) async {
+              if (value == 'perfil') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PerfilPage()),
+                );
+              }
               if (value == 'admin') {
                 final prefs = await SharedPreferences.getInstance();
                 if (!context.mounted) return;
@@ -269,6 +276,17 @@ class _DashboardPageState extends State<DashboardPage> {
                       ],
                     );
                   },
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'perfil',
+                child: const Row(
+                  children: [
+                    Icon(Icons.person_outline),
+                    SizedBox(width: 10),
+                    Text("Mi perfil"),
+                  ],
                 ),
               ),
               const PopupMenuDivider(),
