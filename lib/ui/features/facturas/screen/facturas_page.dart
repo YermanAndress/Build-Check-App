@@ -3,6 +3,7 @@ import 'package:build_check_app/models/factura_model.dart';
 import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/ui/features/facturas/widget/factura_card.dart';
 import 'package:build_check_app/ui/shared/widgets/list_card.dart';
+import 'package:build_check_app/ui/features/facturas/screen/gastos_dashboard_page.dart';
 import 'package:flutter/material.dart';
 
 class FacturasPage extends StatefulWidget {
@@ -44,6 +45,16 @@ class _FacturasPageState extends State<FacturasPage> {
       hintText: 'Buscar por proveedor o número...',
       emptyMessage: 'No hay facturas registradas aún',
       noResultsMessage: 'No se encontraron resultados',
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF4CAF50),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GastosDashboardPage()),
+          );
+        },
+        child: const Icon(Icons.analytics_outlined, color: Colors.white),
+      ),
     );
   }
 }

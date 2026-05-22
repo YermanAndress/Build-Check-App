@@ -26,12 +26,14 @@ class MovimientoService {
   /// Obtiene un mapa de movimientos con caché por proyecto
   Future<Map<int, MovimientoResumen>> obtenerMapaMovimientos({
     bool forzarRefresco = false,
+    int? proyectoId,
   }) async {
-    final proyectoId = ProyectoActual.id;
+    final pId = proyectoId ?? ProyectoActual.id;
 
-    if (_proyectoCacheado != proyectoId) invalidarCache();
+    if (_proyectoCacheado != pId) invalidarCache();
 
-    if (!forzarRefresco &&
+    if (proyectoId == null &&
+        !forzarRefresco &&
         _cacheMapaMovimientos != null &&
         _ultimaCarga != null) {
       if (DateTime.now().difference(_ultimaCarga!).inMinutes < 5) {
@@ -39,8 +41,8 @@ class MovimientoService {
       }
     }
 
-    final url = proyectoId != null
-        ? ApiConfig.movimientosPorProyecto(proyectoId)
+    final url = pId != null
+        ? ApiConfig.movimientosPorProyecto(pId)
         : ApiConfig.movimientos;
 
     final response = await HttpInterceptor.send(() async {
@@ -175,5 +177,67 @@ class MovimientoService {
       debugPrint('DEBUG: Error en actualizarMovimiento: $e');
       return false;
     }
+  }
+
+  /// Obtiene los movimientos y el mapa de materiales de un proyecto específico
+  Future<Map<String, dynamic>> obtenerConsumosYMateriales({int? proyectoId}) async {
+    final pId = proyectoId ?? ProyectoActual.id;
+    final urlMov = pId != null
+        ? ApiConfig.movimientosPorProyecto(pId)
+        : ApiConfig.movimientos;
+    final urlMat = pId != null
+        ? ApiConfig.materialesPorProyecto(pId)
+        : ApiConfig.materiales;
+
+    final headers = await AuthHeader.getHeaders();
+
+    final resMov = await HttpInterceptor.send(() async {
+      return http.get(Uri.parse(urlMov), headers: headers);
+    });
+    final resMat = await HttpInterceptor.send(() async {
+      return http.get(Uri.parse(urlMat), headers: headers);
+    });
+
+    if (resMov.statusCode == 401 || resMat.statusCode == 401) {
+      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
+      return {};
+    }
+
+    if (resMov.statusCode != 200 || resMat.statusCode != 200) {
+      throw Exception('Error al cargar datos del proyecto');
+    }
+
+    List normalizar(dynamic data, String key) {
+      if (data is List) return data;
+      if (data is Map && data.containsKey(key)) return data[key] as List;
+      return [data];
+    }
+
+    final Map<int, MaterialItem> matMap = {};
+    final decodedMat = jsonDecode(resMat.body);
+    final rawMat = normalizar(decodedMat, 'materiales');
+    for (var e in rawMat) {
+      final m = MaterialItem.fromJson(e);
+      matMap[m.id] = m;
+    }
+
+    final decodedMov = jsonDecode(resMov.body);
+    final rawMov = normalizar(decodedMov, 'movimientos');
+    
+    final List<MovimientoResumen> movimientos = [];
+    for (var e in rawMov) {
+      final m = MovimientoResumen.fromJson(e);
+      final mat = matMap[m.materialId];
+      if (mat != null) {
+        movimientos.add(m.conMaterial(mat.nombre, mat.unidadMedida));
+      } else {
+        movimientos.add(m);
+      }
+    }
+
+    return {
+      'movimientos': movimientos,
+      'materiales': matMap,
+    };
   }
 }

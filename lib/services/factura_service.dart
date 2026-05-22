@@ -66,11 +66,11 @@ class FacturaService {
     }
   }
 
-  Future<List<Factura>> obtenerFacturas() async {
+  Future<List<Factura>> obtenerFacturas({int? proyectoId}) async {
     try {
-      final proyectoId = ProyectoActual.id;
-      final url = proyectoId != null
-          ? ApiConfig.facturasPorProyecto(proyectoId)
+      final pId = proyectoId ?? ProyectoActual.id;
+      final url = pId != null
+          ? ApiConfig.facturasPorProyecto(pId)
           : ApiConfig.facturas;
 
       final response = await HttpInterceptor.send(() async {

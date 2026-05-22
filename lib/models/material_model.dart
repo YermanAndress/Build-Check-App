@@ -81,6 +81,7 @@ class MaterialItem {
   final double stockActual;
   final String unidadMedida;
   final DateTime? fechaCreacion;
+  final double? precioUnitario;
 
   const MaterialItem({
     required this.id,
@@ -88,6 +89,7 @@ class MaterialItem {
     required this.stockActual,
     required this.unidadMedida,
     this.fechaCreacion,
+    this.precioUnitario,
   });
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
@@ -98,5 +100,6 @@ class MaterialItem {
     fechaCreacion: json['fechaCreacion'] != null
         ? DateTime.parse(json['fechaCreacion'].toString())
         : null,
+    precioUnitario: (json['precioUnitario'] as num?)?.toDouble(),
   );
 }
