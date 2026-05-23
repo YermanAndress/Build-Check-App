@@ -29,29 +29,20 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
 
   Future<void> _cargar() async {
     if (!mounted) return;
-
     setState(() {
       _cargando = true;
       _error = null;
     });
     try {
       _proyectos = await _service.obtenerMisProyectos();
-      debugPrint("Proyectos cargados: ${_proyectos.length}");
-      debugPrint("Proyectos: $_proyectos");
-      if (mounted) {
-        setState(() => _cargando = false);
-        debugPrint("Proyectos cargados: ${_proyectos.length}");
-        debugPrint("Proyectos: $_proyectos");
-      }
+      if (!mounted) return;
+      setState(() => _cargando = false);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _cargando = false;
-          debugPrint("Proyectos cargados: ${_proyectos.length}");
-          debugPrint("Proyectos: $_proyectos");
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _cargando = false;
+      });
     }
   }
 

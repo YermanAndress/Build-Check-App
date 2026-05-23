@@ -638,9 +638,7 @@ class _AdminProyectoPageState extends State<AdminProyectoPage> {
 
         final nombreRaw = m["usuarioNombre"] as String? ?? "Usuario";
 
-        final nombre = (nombreRaw.startsWith('0') || nombreRaw.startsWith('1'))
-            ? "usuarioNombre"
-            : nombreRaw;
+        final nombre = nombreRaw;
 
         final correo = m['usuarioCorreo'] as String? ?? 'Sin correo';
         final rol = m['rolProyecto'] as String? ?? '';

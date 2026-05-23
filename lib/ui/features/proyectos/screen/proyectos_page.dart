@@ -53,20 +53,24 @@ class _ProyectosPageState extends State<ProyectosPage> {
   }
 
   Future<void> _cargar() async {
+    if (!mounted) return;
     setState(() {
       cargando = true;
       error = null;
     });
     try {
       proyectos = await _service.obtenerMisProyectos();
+      if (!mounted) return;
       if (_searchCtrl.text.isNotEmpty) {
         _filtrar(_searchCtrl.text);
       } else {
         filtrados = proyectos;
       }
     } catch (e) {
+      if (!mounted) return;
       error = e.toString();
     }
+    if (!mounted) return;
     setState(() => cargando = false);
   }
 

@@ -14,6 +14,7 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
   final nombreController = TextEditingController();
   final correoController = TextEditingController();
   final passwordController = TextEditingController();
+  final telefonoController = TextEditingController();
 
   bool loading = false;
   String selectedRole = "ROLE_RESIDENTE";
@@ -26,6 +27,7 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
         nombre: nombreController.text.trim(),
         correo: correoController.text.trim(),
         password: passwordController.text.trim(),
+        telefono: telefonoController.text.trim(),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -84,7 +86,9 @@ class _RegistrarsePageState extends State<RegistrarsePage> {
               controller: passwordController,
               obscure: true,
             ),
+            const SizedBox(height: 20),
 
+            LoginInput(label: "Teléfono", controller: telefonoController),
             const SizedBox(height: 20),
 
             LoginButton(

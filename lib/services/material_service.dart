@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:build_check_app/main.dart';
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/services/auth_header.dart';
-import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/models/material_model.dart';
@@ -31,10 +29,6 @@ class MaterialService {
       return http.get(Uri.parse(url), headers: await AuthHeader.getHeaders());
     });
 
-    if (res.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return [];
-    }
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       final List raw = decoded is List ? decoded : (decoded['alertas'] ?? []);
@@ -65,11 +59,6 @@ class MaterialService {
     final res = await HttpInterceptor.send(() async {
       return http.get(Uri.parse(url), headers: await AuthHeader.getHeaders());
     });
-
-    if (res.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return {};
-    }
 
     final Map<int, MaterialItem> nuevoMapa = {};
     if (res.statusCode == 200) {
@@ -112,11 +101,6 @@ class MaterialService {
       );
     });
 
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return null;
-    }
-
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return MaterialItem.fromJson(data['material']);
@@ -132,11 +116,6 @@ class MaterialService {
         body: jsonEncode(data),
       );
     });
-
-    if (res.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return res.statusCode == 200 || res.statusCode == 201;
   }
 
@@ -169,10 +148,6 @@ class MaterialService {
 
       final streamedRes = await request.send();
       final res = await http.Response.fromStream(streamedRes);
-      if (res.statusCode == 401) {
-        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-        return false;
-      }
       return res.statusCode == 200 || res.statusCode == 201;
     } catch (e) {
       return false;

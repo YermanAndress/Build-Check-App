@@ -26,18 +26,22 @@ class _SelectProyectoModalState extends State<SelectProyectoModal> {
   }
 
   Future<void> _cargar() async {
+    if (!mounted) return;
     setState(() {
       cargando = true;
       error = null;
     });
     try {
       proyectos = await _service.obtenerMisProyectos();
+      if (!mounted) return;
       if (proyectos.isEmpty) {
         error = "No tienes proyectos. Crea uno o pide que te inviten.";
       }
     } catch (e) {
+      if (!mounted) return;
       error = e.toString();
     }
+    if (!mounted) return;
     setState(() => cargando = false);
   }
 

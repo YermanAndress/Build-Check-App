@@ -542,9 +542,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -557,10 +555,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
                   SizedBox(width: 8),
                   Text(
                     'Previsualización',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -575,12 +570,19 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 18),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.amber.shade700,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
                         'Verifica que la imagen sea legible y no esté borrosa.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF666666),
+                        ),
                       ),
                     ),
                   ],

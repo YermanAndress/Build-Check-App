@@ -32,25 +32,27 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
       widget.rolEnProyecto == 'ROLE_ADMIN';
 
   bool get _esOwner => widget.rolEnProyecto == 'ROLE_OWNER';
-  bool _puedeGestionar = false;
 
   @override
   void initState() {
     super.initState();
-    _puedeGestionar = RoleHelper.puedeGestionarProyectos();
     _cargar();
   }
 
   Future<void> _cargar() async {
+    if (!mounted) return;
     setState(() {
       cargando = true;
       error = null;
     });
     try {
       proyecto = await _service.obtenerProyecto(widget.proyectoId);
+      if (!mounted) return;
     } catch (e) {
+      if (!mounted) return;
       error = e.toString();
     }
+    if (!mounted) return;
     setState(() => cargando = false);
   }
 

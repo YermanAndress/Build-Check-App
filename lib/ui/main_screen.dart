@@ -1,4 +1,3 @@
-// lib/ui/main_screen.dart
 import 'package:flutter/material.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/services/role_helper.dart';
