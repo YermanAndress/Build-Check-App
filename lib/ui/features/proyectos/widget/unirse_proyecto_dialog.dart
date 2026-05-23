@@ -106,6 +106,10 @@ class _UnirseProyectoDialogState extends State<UnirseProyectoDialog> {
                     onPressed: _cargando ? null : _unirse,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadiusGeometry.circular(12),
+                      ),
                     ),
                     child: _cargando
                         ? const SizedBox(

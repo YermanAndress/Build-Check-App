@@ -25,6 +25,8 @@ class MovimientoSheet extends StatefulWidget {
 class MovimientoSheetState extends State<MovimientoSheet> {
   final _formKey = GlobalKey<FormState>();
   final _cantidadCtrl = TextEditingController();
+  final TextEditingController _busquedaMaterialCtrl = TextEditingController();
+  List<MaterialItem> _materialFiltrados = [];
 
   List<MaterialItem> _materiales = [];
   MaterialItem? _materialSeleccionado;
@@ -44,6 +46,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
 
   @override
   void dispose() {
+    _busquedaMaterialCtrl.dispose();
     _cantidadCtrl.dispose();
     super.dispose();
   }
@@ -92,6 +95,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
             : (decoded['materiales'] ?? []);
         setState(() {
           _materiales = rawLista.map((e) => MaterialItem.fromJson(e)).toList();
+          _materialFiltrados = [];
           _loadingMateriales = false;
         });
       } else {
@@ -173,70 +177,208 @@ class MovimientoSheetState extends State<MovimientoSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SheetHandle(),
-            Text(
-              isEntrada ? 'Registrar Entrada' : 'Registrar Salida',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SheetHandle(),
+              Text(
+                isEntrada ? 'Registrar Entrada' : 'Registrar Salida',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
 
-            const FieldLabel('Material'),
-            if (_loadingMateriales)
-              const LinearProgressIndicator()
-            else
-              DropdownButtonFormField<MaterialItem>(
-                decoration: inputDecoration(hint: 'Seleccione material'),
-                items: _materiales
-                    .map(
-                      (m) => DropdownMenuItem(value: m, child: Text(m.nombre)),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _materialSeleccionado = v),
-                validator: (v) => v == null ? 'Requerido' : null,
+              const FieldLabel('Material'),
+              if (_loadingMateriales)
+                const LinearProgressIndicator()
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _busquedaMaterialCtrl,
+                      decoration: inputDecoration(
+                        hint: 'Buscar material...',
+                        suffix: const Icon(
+                          Icons.arrow_drop_down,
+                          size: 22,
+                          color: Color(0xFF9E9E9E),
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _materialFiltrados = List.from(_materiales);
+                        });
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _materialFiltrados = value.isEmpty
+                              ? List.from(_materiales)
+                              : _materiales
+                                    .where(
+                                      (m) => m.nombre.toLowerCase().contains(
+                                        value.toLowerCase(),
+                                      ),
+                                    )
+                                    .toList();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    if (_materialFiltrados.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxHeight:
+                                MediaQuery.of(context).size.height * 0.25,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const ClampingScrollPhysics(),
+                            itemCount: _materialFiltrados.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final m = _materialFiltrados[index];
+                              final seleccionado =
+                                  _materialSeleccionado?.id == m.id;
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  m.nombre,
+                                  style: TextStyle(
+                                    fontWeight: seleccionado
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: seleccionado
+                                        ? const Color(0xFF4CAF50)
+                                        : const Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                trailing: seleccionado
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Color(0xFF4CAF50),
+                                        size: 18,
+                                      )
+                                    : null,
+                                onTap: () {
+                                  setState(() {
+                                    _materialSeleccionado = m;
+                                    _busquedaMaterialCtrl.text = m.nombre;
+                                    _materialFiltrados = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    if (_materialSeleccionado != null &&
+                        _busquedaMaterialCtrl.text.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 16,
+                              color: Color(0xFF4CAF50),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _materialSeleccionado!.nombre,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _materialSeleccionado = null;
+                                  _busquedaMaterialCtrl.clear();
+                                });
+                              },
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Color(0xFF757575),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+
+              const SizedBox(height: 16),
+              const FieldLabel('Cantidad'),
+              TextFormField(
+                controller: _cantidadCtrl,
+                keyboardType: TextInputType.number,
+                decoration: inputDecoration(
+                  hint: '0.00',
+                  suffix: Text(_materialSeleccionado?.unidadMedida ?? ''),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
               ),
 
-            const SizedBox(height: 16),
-            const FieldLabel('Cantidad'),
-            TextFormField(
-              controller: _cantidadCtrl,
-              keyboardType: TextInputType.number,
-              decoration: inputDecoration(
-                hint: '0.00',
-                suffix: Text(_materialSeleccionado?.unidadMedida ?? ''),
+              const SizedBox(height: 16),
+              const FieldLabel('Fecha de Movimiento'),
+              DatePicker(fecha: _fecha, onTap: _seleccionarFecha),
+
+              const SizedBox(height: 16),
+              const FieldLabel('Evidencia (Opcional)'),
+              FotoSelector(
+                bytes: _fotoBytes,
+                archivo: _fotoSeleccionada,
+                onSelect: _seleccionarFoto,
+                onRemove: () => setState(() {
+                  _fotoSeleccionada = null;
+                  _fotoBytes = null;
+                }),
               ),
-              validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
-            ),
 
-            const SizedBox(height: 16),
-            const FieldLabel('Fecha de Movimiento'),
-            DatePicker(fecha: _fecha, onTap: _seleccionarFecha),
-
-            const SizedBox(height: 16),
-            const FieldLabel('Evidencia (Opcional)'),
-            FotoSelector(
-              bytes: _fotoBytes,
-              archivo: _fotoSeleccionada,
-              onSelect: _seleccionarFoto,
-              onRemove: () => setState(() {
-                _fotoSeleccionada = null;
-                _fotoBytes = null;
-              }),
-            ),
-
-            const SizedBox(height: 24),
-            BotonEnviar(
-              enviando: _enviando,
-              label: isEntrada ? 'CONFIRMAR ENTRADA' : 'CONFIRMAR SALIDA',
-              color: isEntrada ? Colors.green : Colors.pink,
-              onTap: _enviar,
-            ),
-          ],
+              const SizedBox(height: 24),
+              BotonEnviar(
+                enviando: _enviando,
+                label: isEntrada ? 'CONFIRMAR ENTRADA' : 'CONFIRMAR SALIDA',
+                color: isEntrada ? Colors.green : Colors.pink,
+                onTap: _enviar,
+              ),
+            ],
+          ),
         ),
       ),
     );

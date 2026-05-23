@@ -25,12 +25,12 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
   // Filtros
   int? _proyectoIdSeleccionado;
   DateTimeRange? _rangoFechas;
-  
+
   // Datos
   List<Proyecto> _proyectos = [];
   List<Factura> _facturas = [];
   List<MovimientoResumen> _movimientos = [];
-  
+
   // Estados
   bool _cargandoProyectos = true;
   bool _cargandoDatos = true;
@@ -93,7 +93,8 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
 
       setState(() {
         _facturas = facturas;
-        _movimientos = (result['movimientos'] as List<MovimientoResumen>?) ?? [];
+        _movimientos =
+            (result['movimientos'] as List<MovimientoResumen>?) ?? [];
         _cargandoDatos = false;
       });
     } catch (e) {
@@ -111,10 +112,20 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
     if (_rangoFechas == null) return _facturas;
     return _facturas.where((f) {
       final fechaSinHora = DateTime(f.fecha.year, f.fecha.month, f.fecha.day);
-      final inicio = DateTime(_rangoFechas!.start.year, _rangoFechas!.start.month, _rangoFechas!.start.day);
-      final fin = DateTime(_rangoFechas!.end.year, _rangoFechas!.end.month, _rangoFechas!.end.day);
-      return fechaSinHora.isAfter(inicio.subtract(const Duration(seconds: 1))) &&
-             fechaSinHora.isBefore(fin.add(const Duration(days: 1)));
+      final inicio = DateTime(
+        _rangoFechas!.start.year,
+        _rangoFechas!.start.month,
+        _rangoFechas!.start.day,
+      );
+      final fin = DateTime(
+        _rangoFechas!.end.year,
+        _rangoFechas!.end.month,
+        _rangoFechas!.end.day,
+      );
+      return fechaSinHora.isAfter(
+            inicio.subtract(const Duration(seconds: 1)),
+          ) &&
+          fechaSinHora.isBefore(fin.add(const Duration(days: 1)));
     }).toList();
   }
 
@@ -124,16 +135,29 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
       if (m.tipoMovimiento != 'SALIDA') return false;
       if (_rangoFechas == null) return true;
       final fechaSinHora = DateTime(m.fecha.year, m.fecha.month, m.fecha.day);
-      final inicio = DateTime(_rangoFechas!.start.year, _rangoFechas!.start.month, _rangoFechas!.start.day);
-      final fin = DateTime(_rangoFechas!.end.year, _rangoFechas!.end.month, _rangoFechas!.end.day);
-      return fechaSinHora.isAfter(inicio.subtract(const Duration(seconds: 1))) &&
-             fechaSinHora.isBefore(fin.add(const Duration(days: 1)));
+      final inicio = DateTime(
+        _rangoFechas!.start.year,
+        _rangoFechas!.start.month,
+        _rangoFechas!.start.day,
+      );
+      final fin = DateTime(
+        _rangoFechas!.end.year,
+        _rangoFechas!.end.month,
+        _rangoFechas!.end.day,
+      );
+      return fechaSinHora.isAfter(
+            inicio.subtract(const Duration(seconds: 1)),
+          ) &&
+          fechaSinHora.isBefore(fin.add(const Duration(days: 1)));
     }).toList();
   }
 
   // Total Gastado (Facturas)
   double get _totalGastado {
-    return _facturasFiltradas.fold(0.0, (sum, f) => sum + (f.valorTotal ?? 0.0));
+    return _facturasFiltradas.fold(
+      0.0,
+      (sum, f) => sum + (f.valorTotal ?? 0.0),
+    );
   }
 
   // Mapa de materiales para buscar precios rápidamente
@@ -161,11 +185,15 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
     double gastosMesAnterior = 0.0;
 
     for (var f in _facturas) {
-      if (f.fecha.isAfter(inicioMesActual.subtract(const Duration(seconds: 1))) &&
+      if (f.fecha.isAfter(
+            inicioMesActual.subtract(const Duration(seconds: 1)),
+          ) &&
           f.fecha.isBefore(hoy.add(const Duration(days: 1)))) {
         gastosMesActual += (f.valorTotal ?? 0.0);
-      } else if (f.fecha.isAfter(inicioMesAnterior.subtract(const Duration(seconds: 1))) &&
-                 f.fecha.isBefore(finMesAnterior.add(const Duration(seconds: 1)))) {
+      } else if (f.fecha.isAfter(
+            inicioMesAnterior.subtract(const Duration(seconds: 1)),
+          ) &&
+          f.fecha.isBefore(finMesAnterior.add(const Duration(seconds: 1)))) {
         gastosMesAnterior += (f.valorTotal ?? 0.0);
       }
     }
@@ -185,13 +213,19 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
     if (facturas.isEmpty) return [];
 
     final map = <String, double>{};
-    final inicio = _rangoFechas?.start ?? DateTime.now().subtract(const Duration(days: 30));
+    final inicio =
+        _rangoFechas?.start ??
+        DateTime.now().subtract(const Duration(days: 30));
     final fin = _rangoFechas?.end ?? DateTime.now();
     final diasDiferencia = fin.difference(inicio).inDays;
 
     if (diasDiferencia <= 35) {
       // Agrupar por Día
-      for (var d = inicio; d.isBefore(fin.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+      for (
+        var d = inicio;
+        d.isBefore(fin.add(const Duration(days: 1)));
+        d = d.add(const Duration(days: 1))
+      ) {
         final key = DateFormat('yyyy-MM-dd').format(d);
         map[key] = 0.0;
       }
@@ -232,11 +266,14 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
       final precio = material?.precioUnitario ?? 0.0;
       final costoTotal = m.cantidad * precio;
 
-      final nombre = m.materialNombre.isNotEmpty ? m.materialNombre : "Material #${m.materialId}";
+      final nombre = m.materialNombre.isNotEmpty
+          ? m.materialNombre
+          : "Material #${m.materialId}";
       mapValores[nombre] = (mapValores[nombre] ?? 0.0) + costoTotal;
-      
+
       final unidad = m.unidadMedida.isNotEmpty ? m.unidadMedida : "ud";
-      final cantActual = double.tryParse(mapCantidades[nombre]?.split(' ')[0] ?? '0') ?? 0.0;
+      final cantActual =
+          double.tryParse(mapCantidades[nombre]?.split(' ')[0] ?? '0') ?? 0.0;
       mapCantidades[nombre] = "${cantActual + m.cantidad} $unidad";
     }
 
@@ -302,13 +339,16 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
     // Cargar mapa de materiales local al recibir los datos
     if (!_cargandoDatos && _movimientos.isNotEmpty && _materialesMap.isEmpty) {
       // Re-popular mapa local
-      _movimientoService.obtenerConsumosYMateriales(proyectoId: _proyectoIdSeleccionado).then((res) {
-        if (mounted && res.containsKey('materiales')) {
-          setState(() {
-            _materialesMap = (res['materiales'] as Map<int, MaterialItem>?) ?? {};
+      _movimientoService
+          .obtenerConsumosYMateriales(proyectoId: _proyectoIdSeleccionado)
+          .then((res) {
+            if (mounted && res.containsKey('materiales')) {
+              setState(() {
+                _materialesMap =
+                    (res['materiales'] as Map<int, MaterialItem>?) ?? {};
+              });
+            }
           });
-        }
-      });
     }
 
     final totalGastado = _totalGastado;
@@ -321,58 +361,73 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black87,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Dashboard Financiero',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         centerTitle: true,
       ),
       body: _cargandoProyectos
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+            )
           : _error != null
-              ? _buildErrorState()
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- FILTROS DE SELECCIÓN ---
-                      _buildFiltersSection(primaryGreen),
-                      const SizedBox(height: 16),
+          ? _buildErrorState()
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- FILTROS DE SELECCIÓN ---
+                  _buildFiltersSection(primaryGreen),
+                  const SizedBox(height: 16),
 
-                      if (_cargandoDatos)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
-                          ),
-                        )
-                      else ...[
-                        // --- TARJETAS DE INDICADORES ---
-                        _buildIndicatorsGrid(totalGastado, totalConsumido, variacion),
-                        const SizedBox(height: 20),
+                  if (_cargandoDatos)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    // --- TARJETAS DE INDICADORES ---
+                    _buildIndicatorsGrid(
+                      totalGastado,
+                      totalConsumido,
+                      variacion,
+                    ),
+                    const SizedBox(height: 20),
 
-                        // --- GRÁFICO 1: TENDENCIA DE GASTOS ---
-                        _buildTrendExpensesChart(primaryGreen),
-                        const SizedBox(height: 20),
+                    // --- GRÁFICO 1: TENDENCIA DE GASTOS ---
+                    _buildTrendExpensesChart(primaryGreen),
+                    const SizedBox(height: 20),
 
-                        // --- GRÁFICO 2: CONSUMO DE MATERIALES ---
-                        _buildConsumptionChart(primaryGreen),
-                        const SizedBox(height: 10),
-                      ],
-                    ],
-                  ),
-                ),
+                    // --- GRÁFICO 2: CONSUMO DE MATERIALES ---
+                    _buildConsumptionChart(primaryGreen),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 
   // --- SECCIONES DE LA INTERFAZ ---
 
   Widget _buildFiltersSection(Color primaryGreen) {
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -398,7 +453,10 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
                   child: DropdownButton<int>(
                     value: _proyectoIdSeleccionado,
                     isExpanded: true,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey,
+                    ),
                     style: const TextStyle(
                       color: Colors.black87,
                       fontSize: 15,
@@ -433,7 +491,11 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today_rounded, color: primaryGreen, size: 20),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    color: primaryGreen,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -447,7 +509,11 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.edit_calendar_rounded, color: Colors.grey, size: 18),
+                  const Icon(
+                    Icons.edit_calendar_rounded,
+                    color: Colors.grey,
+                    size: 18,
+                  ),
                 ],
               ),
             ),
@@ -457,7 +523,11 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
     );
   }
 
-  Widget _buildIndicatorsGrid(double totalGastado, double totalConsumido, double variacion) {
+  Widget _buildIndicatorsGrid(
+    double totalGastado,
+    double totalConsumido,
+    double variacion,
+  ) {
     return Column(
       children: [
         Row(
@@ -489,12 +559,18 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
         _buildMetricCard(
           title: "Variación Mensual de Gastos",
           value: "${variacion >= 0 ? '+' : ''}${variacion.toStringAsFixed(1)}%",
-          sub: variacion >= 0 
+          sub: variacion >= 0
               ? "Incremento de compras vs mes anterior"
               : "Ahorro/Reducción en compras vs mes anterior",
-          icon: variacion >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-          color: variacion >= 0 ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
-          iconColor: variacion >= 0 ? Colors.redAccent : const Color(0xFF4CAF50),
+          icon: variacion >= 0
+              ? Icons.trending_up_rounded
+              : Icons.trending_down_rounded,
+          color: variacion >= 0
+              ? const Color(0xFFFFEBEE)
+              : const Color(0xFFE8F5E9),
+          iconColor: variacion >= 0
+              ? Colors.redAccent
+              : const Color(0xFF4CAF50),
           isFullWidth: true,
         ),
       ],
@@ -528,10 +604,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 14),
@@ -559,10 +632,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
                 const SizedBox(height: 3),
                 Text(
                   sub,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 10.5, color: Colors.grey),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -628,7 +698,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
 
   Widget _buildConsumptionChart(Color primaryGreen) {
     final topMateriales = _topMaterialesConsumidos;
-    final double maxValor = topMateriales.isNotEmpty 
+    final double maxValor = topMateriales.isNotEmpty
         ? topMateriales.map((m) => m.valorTotal).reduce((a, b) => a > b ? a : b)
         : 1.0;
 
@@ -664,7 +734,9 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
           ),
           const SizedBox(height: 20),
           if (topMateriales.isEmpty)
-            _buildEmptyChartState("No se han registrado consumos de material (salidas) en este período")
+            _buildEmptyChartState(
+              "No se han registrado consumos de material (salidas) en este período",
+            )
           else
             ListView.separated(
               shrinkWrap: true,
@@ -673,8 +745,10 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
               separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final mat = topMateriales[index];
-                final porcentaje = maxValor > 0 ? (mat.valorTotal / maxValor) : 0.0;
-                
+                final porcentaje = maxValor > 0
+                    ? (mat.valorTotal / maxValor)
+                    : 0.0;
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -713,7 +787,11 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
                         ),
                         Text(
                           mat.cantidadFormateada,
-                          style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -732,7 +810,9 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  const Color(0xFFFF9800).withValues(alpha: 0.8),
+                                  const Color(
+                                    0xFFFF9800,
+                                  ).withValues(alpha: 0.8),
                                   const Color(0xFFFF5722),
                                 ],
                               ),
@@ -795,7 +875,9 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -843,20 +925,19 @@ class LineChartPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final paintFill = Paint()
-      ..style = PaintingStyle.fill;
+    final paintFill = Paint()..style = PaintingStyle.fill;
 
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     // Calcular valores máx / mín de gastos
-    double maxValue = points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    double maxValue = points
+        .map((p) => p.value)
+        .reduce((a, b) => a > b ? a : b);
     if (maxValue == 0.0) maxValue = 1.0;
 
     final double width = size.width;
     final double height = size.height;
-    
+
     // Márgenes
     const double paddingLeft = 40.0;
     const double paddingRight = 10.0;
@@ -881,14 +962,19 @@ class LineChartPainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = Colors.grey.withValues(alpha: 0.15)
       ..strokeWidth = 1.0;
-    
+
     const int verticalGridLines = 4;
     for (int i = 0; i <= verticalGridLines; i++) {
       final double y = paddingTop + (chartHeight * i / verticalGridLines);
-      canvas.drawLine(Offset(paddingLeft, y), Offset(width - paddingRight, y), gridPaint);
+      canvas.drawLine(
+        Offset(paddingLeft, y),
+        Offset(width - paddingRight, y),
+        gridPaint,
+      );
 
       // Etiquetas Y
-      final double labelValue = maxValue * (verticalGridLines - i) / verticalGridLines;
+      final double labelValue =
+          maxValue * (verticalGridLines - i) / verticalGridLines;
       String labelStr;
       if (labelValue >= 1000000) {
         labelStr = "${(labelValue / 1000000).toStringAsFixed(1)}M";
@@ -900,7 +986,11 @@ class LineChartPainter extends CustomPainter {
 
       textPainter.text = TextSpan(
         text: "\$$labelStr",
-        style: TextStyle(color: Colors.grey[500], fontSize: 9, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: Colors.grey[500],
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(5, y - 6));
@@ -909,13 +999,20 @@ class LineChartPainter extends CustomPainter {
     // --- DIBUJAR LA CURVA O LÍNEAS DEL GRÁFICO ---
     final path = Path();
     path.moveTo(offsets[0].dx, offsets[0].dy);
-    
+
     for (int i = 0; i < offsets.length - 1; i++) {
       final p1 = offsets[i];
       final p2 = offsets[i + 1];
       final controlPoint1 = Offset(p1.dx + (p2.dx - p1.dx) / 2.0, p1.dy);
       final controlPoint2 = Offset(p1.dx + (p2.dx - p1.dx) / 2.0, p2.dy);
-      path.cubicTo(controlPoint1.dx, controlPoint1.dy, controlPoint2.dx, controlPoint2.dy, p2.dx, p2.dy);
+      path.cubicTo(
+        controlPoint1.dx,
+        controlPoint1.dy,
+        controlPoint2.dx,
+        controlPoint2.dy,
+        p2.dx,
+        p2.dy,
+      );
     }
 
     // --- DIBUJAR GRADIENTE BAJO LA LÍNEA ---
@@ -924,15 +1021,23 @@ class LineChartPainter extends CustomPainter {
     fillPath.lineTo(offsets.first.dx, paddingTop + chartHeight);
     fillPath.close();
 
-    paintFill.shader = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        lineColor.withValues(alpha: 0.35),
-        lineColor.withValues(alpha: 0.0),
-      ],
-    ).createShader(Rect.fromLTRB(paddingLeft, paddingTop, width - paddingRight, paddingTop + chartHeight));
-    
+    paintFill.shader =
+        LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            lineColor.withValues(alpha: 0.35),
+            lineColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(
+          Rect.fromLTRB(
+            paddingLeft,
+            paddingTop,
+            width - paddingRight,
+            paddingTop + chartHeight,
+          ),
+        );
+
     canvas.drawPath(fillPath, paintFill);
     canvas.drawPath(path, paintLine);
 
@@ -958,7 +1063,11 @@ class LineChartPainter extends CustomPainter {
         // Etiquetas Eje X
         textPainter.text = TextSpan(
           text: points[i].label,
-          style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+          ),
         );
         textPainter.layout();
         canvas.save();

@@ -159,7 +159,9 @@ class FotoSelector extends StatelessWidget {
         width: double.infinity,
         height: height,
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.4)),
+          border: Border.all(
+            color: const Color(0xFF4CAF50).withValues(alpha: 0.4),
+          ),
           borderRadius: BorderRadius.circular(12),
           color: const Color(0xFFF0FFF0),
         ),
@@ -235,7 +237,10 @@ class FotoSelector extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         'Usar cámara',
-                        style: TextStyle(fontSize: 10, color: Color(0xFFAAAAAA)),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFFAAAAAA),
+                        ),
                       ),
                     ],
                   ),
@@ -289,7 +294,10 @@ class FotoSelector extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         'Desde galería',
-                        style: TextStyle(fontSize: 10, color: Color(0xFFAAAAAA)),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFFAAAAAA),
+                        ),
                       ),
                     ],
                   ),

@@ -42,6 +42,7 @@ class LoginService {
     required String nombre,
     required String correo,
     required String password,
+    required String telefono,
   }) async {
     await _loadPublicKey();
 
@@ -53,6 +54,7 @@ class LoginService {
         'nombre': nombre,
         'correo': _rsa.encrypt(correo),
         'password': password,
+        'telefono': telefono,
       }),
     );
 
@@ -63,11 +65,18 @@ class LoginService {
 
   Future<void> recuperarPassword(String correo) async {
     final url = Uri.parse(
-      '${ApiConfig.usuarios}/usuarios/recuperar?correo=$correo',
+      '${ApiConfig.usuarios}/usuarios/recuperar?correo=${Uri.encodeComponent(correo)}',
     );
     final res = await http.post(url);
     if (res.statusCode != 200) {
-      throw Exception('Error al enviar correo de recuperación');
+      try {
+        final body = jsonDecode(res.body);
+        final mensaje =
+            body['error'] ?? body['mensaje'] ?? 'Error al enviar correo';
+        throw Exception(mensaje);
+      } catch (_) {
+        throw Exception('Error al enviar correo de recuperacion');
+      }
     }
   }
 }

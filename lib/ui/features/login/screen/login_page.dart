@@ -51,8 +51,8 @@ class _LoginpageState extends State<Loginpage> {
       await UsuarioActual.set(
         usuarioId,
         correo ?? emailController.text,
-        nombre: data['nombre'],
-        rol: data['rol']?.toString(),
+        nombre: usuarioData['nombre'] as String?,
+        telegramChatId: usuarioData['telegramChatId'] as String?,
       );
 
       // Guardar tokens

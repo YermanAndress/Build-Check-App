@@ -181,12 +181,6 @@ class _DashboardPageState extends State<DashboardPage> {
               color: Color(0xFF555555),
             ),
             onSelected: (value) async {
-              if (value == 'perfil') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PerfilPage()),
-                );
-              }
               if (value == 'admin') {
                 final prefs = await SharedPreferences.getInstance();
                 if (!context.mounted) return;
@@ -221,6 +215,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const Loginpage()),
+                );
+              } else if (value == 'perfil') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PerfilPage()),
                 );
               }
             },
@@ -283,7 +282,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 value: 'perfil',
                 child: const Row(
                   children: [
-                    Icon(Icons.person_outline),
+                    Icon(Icons.person_outline, color: Color(0xFF424242)),
                     SizedBox(width: 10),
                     Text("Mi perfil"),
                   ],

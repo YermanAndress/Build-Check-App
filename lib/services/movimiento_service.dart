@@ -180,7 +180,9 @@ class MovimientoService {
   }
 
   /// Obtiene los movimientos y el mapa de materiales de un proyecto específico
-  Future<Map<String, dynamic>> obtenerConsumosYMateriales({int? proyectoId}) async {
+  Future<Map<String, dynamic>> obtenerConsumosYMateriales({
+    int? proyectoId,
+  }) async {
     final pId = proyectoId ?? ProyectoActual.id;
     final urlMov = pId != null
         ? ApiConfig.movimientosPorProyecto(pId)
@@ -223,7 +225,7 @@ class MovimientoService {
 
     final decodedMov = jsonDecode(resMov.body);
     final rawMov = normalizar(decodedMov, 'movimientos');
-    
+
     final List<MovimientoResumen> movimientos = [];
     for (var e in rawMov) {
       final m = MovimientoResumen.fromJson(e);
@@ -235,9 +237,6 @@ class MovimientoService {
       }
     }
 
-    return {
-      'movimientos': movimientos,
-      'materiales': matMap,
-    };
+    return {'movimientos': movimientos, 'materiales': matMap};
   }
 }
