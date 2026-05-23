@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
-import 'package:build_check_app/main.dart';
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/services/auth_header.dart';
-import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:build_check_app/models/material_model.dart';
 import 'package:build_check_app/models/movimiento_model.dart';
@@ -48,11 +46,6 @@ class MovimientoService {
     final response = await HttpInterceptor.send(() async {
       return http.get(Uri.parse(url), headers: await AuthHeader.getHeaders());
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return {};
-    }
 
     if (response.statusCode != 200) {
       throw Exception('Error al cargar movimientos: ${response.statusCode}');
@@ -102,11 +95,6 @@ class MovimientoService {
     final resMat = await HttpInterceptor.send(() async {
       return http.get(Uri.parse(urlMat), headers: headers);
     });
-
-    if (resMov.statusCode == 401 || resMat.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return {};
-    }
 
     if (resMov.statusCode != 200) throw 'Error: ${resMov.statusCode}';
 
@@ -168,10 +156,6 @@ class MovimientoService {
           body: jsonEncode(data),
         );
       });
-      if (res.statusCode == 401) {
-        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-        return false;
-      }
       return res.statusCode == 200;
     } catch (e) {
       debugPrint('DEBUG: Error en actualizarMovimiento: $e');
@@ -199,11 +183,6 @@ class MovimientoService {
     final resMat = await HttpInterceptor.send(() async {
       return http.get(Uri.parse(urlMat), headers: headers);
     });
-
-    if (resMov.statusCode == 401 || resMat.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return {};
-    }
 
     if (resMov.statusCode != 200 || resMat.statusCode != 200) {
       throw Exception('Error al cargar datos del proyecto');

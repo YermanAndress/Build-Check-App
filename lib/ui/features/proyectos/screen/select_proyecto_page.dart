@@ -36,25 +36,13 @@ class _SelectProyectoPageState extends State<SelectProyectoPage> {
     try {
       _proyectos = await _service.obtenerMisProyectos();
       if (!mounted) return;
-      debugPrint("Proyectos cargados: ${_proyectos.length}");
-      debugPrint("Proyectos: $_proyectos");
-      if (mounted) {
-        setState(() => _cargando = false);
-        if (!mounted) return;
-        debugPrint("Proyectos cargados: ${_proyectos.length}");
-        debugPrint("Proyectos: $_proyectos");
-      }
+      setState(() => _cargando = false);
     } catch (e) {
       if (!mounted) return;
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          if (!mounted) return;
-          _cargando = false;
-          debugPrint("Proyectos cargados: ${_proyectos.length}");
-          debugPrint("Proyectos: $_proyectos");
-        });
-      }
+      setState(() {
+        _error = e.toString();
+        _cargando = false;
+      });
     }
   }
 

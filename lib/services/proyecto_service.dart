@@ -3,10 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:build_check_app/core/api_config.dart';
-import 'package:build_check_app/main.dart';
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/services/auth_header.dart';
-import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 
 class ProyectoService {
@@ -17,11 +15,6 @@ class ProyectoService {
         headers: await AuthHeader.getHeaders(),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return [];
-    }
 
     if (response.statusCode == 200) {
       debugPrint('📥 obtenerMisProyectos - statusCode: 200');
@@ -54,11 +47,6 @@ class ProyectoService {
       );
     });
 
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      throw Exception("No autorizado");
-    }
-
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       return Proyecto.fromJson(decoded['proyecto']);
@@ -78,11 +66,6 @@ class ProyectoService {
 
     debugPrint('📤 crearProyecto - statusCode: ${response.statusCode}');
     debugPrint('📤 crearProyecto - response body: ${response.body}');
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      throw Exception("No autorizado");
-    }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       try {
@@ -124,11 +107,6 @@ class ProyectoService {
         body: jsonEncode(proyecto.toJson()),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return response.statusCode == 200;
   }
 
@@ -139,11 +117,6 @@ class ProyectoService {
         headers: await AuthHeader.getHeaders(),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return response.statusCode == 200 ||
         response.statusCode == 202 ||
         response.statusCode == 204;
@@ -162,11 +135,6 @@ class ProyectoService {
         body: jsonEncode({"rolPorDefecto": rolPorDefecto}),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      throw Exception("No autorizado");
-    }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final decoded = jsonDecode(response.body);
@@ -187,11 +155,6 @@ class ProyectoService {
       );
     });
 
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return [];
-    }
-
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final List<dynamic> lista = decoded['invitaciones'] as List<dynamic>;
@@ -207,11 +170,6 @@ class ProyectoService {
         headers: await AuthHeader.getHeaders(),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return response.statusCode == 200;
   }
 
@@ -224,11 +182,6 @@ class ProyectoService {
         headers: await AuthHeader.getHeaders(),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return [];
-    }
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
@@ -250,11 +203,6 @@ class ProyectoService {
         body: jsonEncode({"nuevoRol": nuevoRol}),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return response.statusCode == 200;
   }
 
@@ -265,11 +213,6 @@ class ProyectoService {
         headers: await AuthHeader.getHeaders(),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      return false;
-    }
     return response.statusCode == 200;
   }
 
@@ -283,11 +226,6 @@ class ProyectoService {
         body: jsonEncode({"token": token}),
       );
     });
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      throw Exception("No autorizado");
-    }
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
@@ -311,11 +249,6 @@ class ProyectoService {
 
     debugPrint('📤 seleccionarProyecto - statusCode: ${response.statusCode}');
     debugPrint('📤 seleccionarProyecto - response body: ${response.body}');
-
-    if (response.statusCode == 401) {
-      await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-      throw Exception("No autorizado");
-    }
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
