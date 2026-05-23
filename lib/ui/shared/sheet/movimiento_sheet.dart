@@ -84,10 +84,6 @@ class MovimientoSheetState extends State<MovimientoSheet> {
           headers: await AuthHeader.getHeaders(),
         );
       });
-      if (res.statusCode == 401) {
-        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-        return;
-      }
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -138,11 +134,6 @@ class MovimientoSheetState extends State<MovimientoSheet> {
         );
       });
       if (!mounted) return;
-
-      if (res.statusCode == 401) {
-        await HttpHandler.handleUnauthorized(navigatorKey.currentContext!);
-        return;
-      }
       if (res.statusCode == 200 || res.statusCode == 201) {
         Navigator.pop(context, true);
       } else {

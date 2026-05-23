@@ -50,12 +50,14 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
   }
 
   Future<void> _cargarProyectos() async {
+    if (!mounted) return;
     setState(() {
       _cargandoProyectos = true;
       _error = null;
     });
     try {
       final proyectos = await _proyectoService.obtenerMisProyectos();
+      if (!mounted) return;
       setState(() {
         _proyectos = proyectos;
         _cargandoProyectos = false;
@@ -66,6 +68,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
       }
       _cargarDatosDashboard();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = "Error al cargar los proyectos: $e";
         _cargandoProyectos = false;
@@ -76,6 +79,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
 
   Future<void> _cargarDatosDashboard() async {
     if (_proyectoIdSeleccionado == null) return;
+    if (!mounted) return;
     setState(() {
       _cargandoDatos = true;
       _error = null;
@@ -90,7 +94,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
       final result = await _movimientoService.obtenerConsumosYMateriales(
         proyectoId: _proyectoIdSeleccionado,
       );
-
+      if (!mounted) return;
       setState(() {
         _facturas = facturas;
         _movimientos =
@@ -98,6 +102,7 @@ class _GastosDashboardPageState extends State<GastosDashboardPage> {
         _cargandoDatos = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = "Error al cargar datos financieros: $e";
         _cargandoDatos = false;

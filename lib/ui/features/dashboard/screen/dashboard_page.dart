@@ -66,6 +66,12 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  @override
+  void dispose() {
+    ProyectoActual.notifier.removeListener(_onProyectoChanged);
+    super.dispose();
+  }
+
   final MovimientoService _movimientoService = MovimientoService();
   final MaterialService _materialService = MaterialService();
   final ProyectoService _proyectoService = ProyectoService();

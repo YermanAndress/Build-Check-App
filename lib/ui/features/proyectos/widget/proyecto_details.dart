@@ -40,15 +40,19 @@ class _ProyectoDetailsState extends State<ProyectoDetails> {
   }
 
   Future<void> _cargar() async {
+    if (!mounted) return;
     setState(() {
       cargando = true;
       error = null;
     });
     try {
       proyecto = await _service.obtenerProyecto(widget.proyectoId);
+      if (!mounted) return;
     } catch (e) {
+      if (!mounted) return;
       error = e.toString();
     }
+    if (!mounted) return;
     setState(() => cargando = false);
   }
 
