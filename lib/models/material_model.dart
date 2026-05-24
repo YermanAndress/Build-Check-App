@@ -62,7 +62,7 @@ class AlertaMaterial {
   });
 
   factory AlertaMaterial.fromJson(Map<String, dynamic> json) => AlertaMaterial(
-    id: (json['id'] as int).toInt(),
+    id: (json['id'] as num).toInt(),
     nombre: json['nombre'].toString(),
     mensaje: json['mensaje'].toString(),
     stockActual: (json['stockActual'] as num).toDouble(),
