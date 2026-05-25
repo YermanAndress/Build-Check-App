@@ -119,7 +119,9 @@ class _FacturaSheetState extends State<FacturaSheet> {
   }
 
   void _dialogoSeleccionarExistente() async {
-    final mapa = await _materialService.obtenerMapaMateriales();
+    final mapa = await _materialService.obtenerMapaMateriales(
+      forzarRefresco: true,
+    );
     final materiales = mapa.values.toList();
 
     if (!mounted) return;
@@ -277,18 +279,31 @@ class _FacturaSheetState extends State<FacturaSheet> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (nCtrl.text.isEmpty) return;
-                _agregarMaterial(
-                  null,
-                  double.tryParse(cCtrl.text) ?? 0,
-                  double.tryParse(pCtrl.text) ?? 0,
-                  nCtrl.text,
-                  tempUnidad,
-                  UsuarioActual.id,
-                  DateTime.now(),
-                );
                 Navigator.pop(context);
+                final nuevoMaterial = await _materialService.crearMaterial(
+                  nCtrl.text.trim(),
+                  tempUnidad.name,
+                  double.tryParse(pCtrl.text) ?? 0,
+                  double.tryParse(cCtrl.text) ?? 0,
+                );
+                if (nuevoMaterial != null) {
+                  _agregarMaterial(
+                    nuevoMaterial.id,
+                    double.tryParse(cCtrl.text) ?? 0,
+                    double.tryParse(pCtrl.text) ?? 0,
+                    nuevoMaterial.nombre,
+                    tempUnidad,
+                    UsuarioActual.id,
+                    DateTime.now(),
+                  );
+                  MaterialService.invalidarCache();
+                } else {
+                  if (mounted) {
+                    _mostrarSnack('Error al crear el material', isError: true);
+                  }
+                }
               },
               child: const Text("Agregar a la factura"),
             ),

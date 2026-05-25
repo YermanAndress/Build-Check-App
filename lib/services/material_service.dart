@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:build_check_app/core/usuario_actual.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
@@ -84,9 +86,8 @@ class MaterialService {
     double stock,
   ) async {
     final proyectoId = ProyectoActual.id;
-    final url = proyectoId != null
-        ? ApiConfig.materialesPorProyecto(proyectoId)
-        : ApiConfig.materiales;
+    if (proyectoId == null) return null;
+    final url = ApiConfig.materialesPorProyecto(proyectoId);
 
     final response = await HttpInterceptor.send(() async {
       return http.post(
@@ -97,6 +98,7 @@ class MaterialService {
           'unidadMedida': unidad,
           'precioUnitario': precio,
           'stockActual': stock,
+          'usuario': {'id': UsuarioActual.id},
         }),
       );
     });
@@ -105,6 +107,9 @@ class MaterialService {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return MaterialItem.fromJson(data['material']);
     }
+    debugPrint(
+      'Error crearMaterial: ${response.statusCode} - ${response.body}',
+    );
     return null;
   }
 

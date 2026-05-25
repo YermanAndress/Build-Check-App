@@ -77,10 +77,18 @@ class MovimientoSheetState extends State<MovimientoSheet> {
   }
 
   Future<void> _cargarMateriales() async {
+    final proyectoId = ProyectoActual.id;
+    if (proyectoId == null) {
+      setState(() {
+        errorMateriales = 'No hay proyecto seleccionado';
+        _loadingMateriales = false;
+      });
+      return;
+    }
     try {
       final res = await HttpInterceptor.send(() async {
         return http.get(
-          Uri.parse(ApiConfig.materiales),
+          Uri.parse(ApiConfig.materialesPorProyecto(ProyectoActual.id!)),
           headers: await AuthHeader.getHeaders(),
         );
       });
