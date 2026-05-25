@@ -334,6 +334,7 @@ class _FacturaSheetState extends State<FacturaSheet> {
               builder: (_) =>
                   build_check_app_ocr_review.FacturaOcrReviewSheet(
                     facturaExtraida: facturaOcr,
+                    imageBytes: _fotoBytes!,
                   ),
             );
             exito = true;

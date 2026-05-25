@@ -1,14 +1,21 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:build_check_app/models/factura_model.dart';
 import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/enum/unidad_medida.dart';
 
 class FacturaOcrReviewSheet extends StatefulWidget {
   final Factura facturaExtraida;
+  final Uint8List? imageBytes;
 
-  const FacturaOcrReviewSheet({super.key, required this.facturaExtraida});
+  const FacturaOcrReviewSheet({
+    super.key,
+    required this.facturaExtraida,
+    this.imageBytes,
+  });
 
   @override
   State<FacturaOcrReviewSheet> createState() => _FacturaOcrReviewSheetState();
@@ -21,6 +28,12 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   late TextEditingController _fechaCtrl;
   late DateTime _fechaSeleccionada;
   bool _enviando = false;
+  Uint8List? _imageBytes;
+  late List<FacturaMaterialItem> _items;
+  final List<TextEditingController> _itemNombreCtrls = [];
+  final List<TextEditingController> _itemCantidadCtrls = [];
+  final List<TextEditingController> _itemPrecioCtrls = [];
+  final List<UnidadMedida> _itemUnidades = [];
 
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -41,7 +54,42 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     _fechaCtrl = TextEditingController(
       text: _dateFormat.format(_fechaSeleccionada),
     );
+
+    _imageBytes = widget.imageBytes;
+
+    _items = widget.facturaExtraida.items
+        .map(
+          (item) => FacturaMaterialItem(
+            materialId: item.materialId,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            unidadMedida: item.unidadMedida,
+            usuarioId: item.usuarioId,
+            fechaCreacion: item.fechaCreacion,
+          ),
+        )
+        .toList();
+    if (_items.isEmpty) {
+      _addItem();
+    } else {
+      for (final item in _items) {
+        _itemNombreCtrls.add(TextEditingController(text: item.nombre));
+        _itemCantidadCtrls.add(
+          TextEditingController(
+            text: item.cantidad == 0 ? '' : item.cantidad.toString(),
+          ),
+        );
+        _itemPrecioCtrls.add(
+          TextEditingController(
+            text: item.precioUnitario == 0 ? '' : item.precioUnitario.toString(),
+          ),
+        );
+        _itemUnidades.add(item.unidadMedida);
+      }
+    }
   }
+
 
   Future<void> _seleccionarFecha(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -71,8 +119,9 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   }
 
   Future<void> _guardarFactura() async {
-    // Validar que items no esté vacío
-    if (widget.facturaExtraida.items.isEmpty) {
+    _syncItemsFromInputs();
+
+    if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Materiales es un campo obligatorio'),
@@ -98,13 +147,17 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
       proyectoId: widget.facturaExtraida.proyectoId,
       usuarioId: widget.facturaExtraida.usuarioId,
       urlImagen: widget.facturaExtraida.urlImagen,
-      items: widget.facturaExtraida.items,
+      items: _items,
       fechaCreacion: widget.facturaExtraida.fechaCreacion,
     );
 
-    final success = await FacturaService().registrarFacturaManual(
-      facturaAGuardar,
-    );
+    final service = FacturaService();
+    final success = _imageBytes == null
+        ? await service.registrarFacturaManual(facturaAGuardar)
+        : await service.registrarFacturaConImagen(
+            factura: facturaAGuardar,
+            bytes: _imageBytes!,
+          );
 
     if (mounted) {
       setState(() => _enviando = false);
@@ -196,90 +249,19 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            if (widget.facturaExtraida.items.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.shade200),
+            _buildItemsEditor(),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _addItem,
+                icon: const Icon(Icons.add, color: Color(0xFF4CAF50)),
+                label: const Text(
+                  'Agregar material',
+                  style: TextStyle(color: Color(0xFF4CAF50)),
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_outlined, color: Colors.orange.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'No se detectaron materiales. Debes agregar al menos uno.',
-                        style: TextStyle(
-                          color: Colors.orange.shade900,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: widget.facturaExtraida.items.length,
-                itemBuilder: (context, index) {
-                  final item = widget.facturaExtraida.items[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.nombre,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Cantidad: ${item.cantidad} ${item.unidadMedida.nombre}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            Text(
-                              'Precio Unit: \$${item.precioUnitario}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Subtotal: \$${(item.cantidad * item.precioUnitario).toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4CAF50),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               ),
+            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -324,8 +306,212 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     );
   }
 
+  Widget _buildItemsEditor() {
+    return Column(
+      children: List.generate(_items.length, (index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _buildItemField(
+                      'Material',
+                      _itemNombreCtrls[index],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildItemField(
+                      'Cant',
+                      _itemCantidadCtrls[index],
+                      isNumber: true,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildUnidadDropdown(index),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildItemField(
+                      'Valor unitario',
+                      _itemPrecioCtrls[index],
+                      isNumber: true,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _removeItem(index),
+                    icon: const Icon(Icons.delete_outline),
+                    color: Colors.redAccent,
+                    tooltip: 'Eliminar material',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildItemField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+    );
+  }
+
+  Widget _buildUnidadDropdown(int index) {
+    return DropdownButtonFormField<UnidadMedida>(
+      value: _itemUnidades[index],
+      items: UnidadMedida.values
+          .map(
+            (unidad) => DropdownMenuItem(
+              value: unidad,
+              child: Text(
+                unidad.nombre,
+                style: const TextStyle(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) {
+          return;
+        }
+        setState(() => _itemUnidades[index] = value);
+      },
+      decoration: InputDecoration(
+        labelText: 'Unidad',
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+    );
+  }
+
+  void _addItem() {
+    setState(() {
+      final newItem = FacturaMaterialItem(
+        materialId: null,
+        nombre: '',
+        cantidad: 0,
+        precioUnitario: 0,
+        unidadMedida: UnidadMedida.UNIDAD,
+        usuarioId: widget.facturaExtraida.usuarioId,
+        fechaCreacion: null,
+      );
+      _items.add(newItem);
+      _itemNombreCtrls.add(TextEditingController());
+      _itemCantidadCtrls.add(TextEditingController());
+      _itemPrecioCtrls.add(TextEditingController());
+      _itemUnidades.add(UnidadMedida.UNIDAD);
+    });
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _items.removeAt(index);
+      _itemNombreCtrls.removeAt(index).dispose();
+      _itemCantidadCtrls.removeAt(index).dispose();
+      _itemPrecioCtrls.removeAt(index).dispose();
+      _itemUnidades.removeAt(index);
+    });
+  }
+
+  void _syncItemsFromInputs() {
+    final List<FacturaMaterialItem> updated = [];
+
+    for (int i = 0; i < _items.length; i++) {
+      final nombre = _itemNombreCtrls[i].text.trim();
+      final cantidad = double.tryParse(_itemCantidadCtrls[i].text) ?? 0;
+      final precioUnitario = double.tryParse(_itemPrecioCtrls[i].text) ?? 0;
+      final unidad = _itemUnidades[i];
+
+      if (nombre.isEmpty && cantidad == 0 && precioUnitario == 0) {
+        continue;
+      }
+
+      updated.add(
+        FacturaMaterialItem(
+          materialId: _items[i].materialId,
+          nombre: nombre.isEmpty ? 'Sin nombre' : nombre,
+          cantidad: cantidad,
+          precioUnitario: precioUnitario,
+          unidadMedida: unidad,
+          usuarioId: widget.facturaExtraida.usuarioId,
+          fechaCreacion: _items[i].fechaCreacion,
+        ),
+      );
+    }
+
+    _items = updated;
+  }
+
   @override
   void dispose() {
+    for (final controller in _itemNombreCtrls) {
+      controller.dispose();
+    }
+    for (final controller in _itemCantidadCtrls) {
+      controller.dispose();
+    }
+    for (final controller in _itemPrecioCtrls) {
+      controller.dispose();
+    }
     _proveedorCtrl.dispose();
     _numeroCtrl.dispose();
     _valorCtrl.dispose();

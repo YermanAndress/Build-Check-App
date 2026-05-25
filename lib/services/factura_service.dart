@@ -4,6 +4,7 @@ import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
@@ -32,6 +33,12 @@ class FacturaService {
     required int usuarioId,
   }) async {
     try {
+      final detectedMimeType = _detectMimeType(bytes);
+      final detectedExtension = _extensionForMime(detectedMimeType) ?? 'jpg';
+      debugPrint(
+        "OCR Upload Debug -> bytes: ${bytes.length}, mime: $detectedMimeType, ext: $detectedExtension",
+      );
+
       final token = await SecureStorage.read("accessToken");
       var request = http.MultipartRequest(
         'POST',
@@ -50,7 +57,10 @@ class FacturaService {
         http.MultipartFile.fromBytes(
           'file',
           bytes,
-          filename: 'factura_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          filename:
+              'factura_${DateTime.now().millisecondsSinceEpoch}.$detectedExtension',
+          contentType:
+              detectedMimeType != null ? MediaType.parse(detectedMimeType) : null,
         ),
       );
 
@@ -85,12 +95,90 @@ class FacturaService {
     }
   }
 
+  Future<bool> registrarFacturaConImagen({
+    required Factura factura,
+    required Uint8List bytes,
+  }) async {
+    try {
+      final token = await SecureStorage.read("accessToken");
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiConfig.facturasWithImage),
+      );
+      request.headers["Authorization"] = "Bearer $token";
+
+      final proyectoIdHeader = ProyectoActual.id;
+      if (proyectoIdHeader != null) {
+        request.headers["X-Proyecto-Id"] = proyectoIdHeader.toString();
+      }
+
+      request.fields["factura"] = jsonEncode(factura.toJson());
+
+      final detectedMimeType = _detectMimeType(bytes);
+      final detectedExtension = _extensionForMime(detectedMimeType) ?? 'jpg';
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename:
+              'factura_${DateTime.now().millisecondsSinceEpoch}.$detectedExtension',
+          contentType:
+              detectedMimeType != null ? MediaType.parse(detectedMimeType) : null,
+        ),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint("Error en FacturaService (Con Imagen): $e");
+      return false;
+    }
+  }
+
   String? _extractErrorMessage(String responseBody) {
     try {
       final data = jsonDecode(responseBody);
       return data['mensaje']?.toString();
     } catch (_) {
       return null;
+    }
+  }
+
+  String? _detectMimeType(Uint8List bytes) {
+    if (bytes.length < 12) {
+      return null;
+    }
+
+    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A) {
+      return 'image/png';
+    }
+
+    // JPEG signature: FF D8 FF
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+      return 'image/jpeg';
+    }
+
+    return null;
+  }
+
+  String? _extensionForMime(String? mimeType) {
+    switch (mimeType) {
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      default:
+        return null;
     }
   }
 

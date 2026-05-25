@@ -236,7 +236,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withAlpha(20),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -246,7 +246,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
                             shrinkWrap: true,
                             physics: const ClampingScrollPhysics(),
                             itemCount: _materialFiltrados.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final m = _materialFiltrados[index];
