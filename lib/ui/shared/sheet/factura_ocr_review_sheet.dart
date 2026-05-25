@@ -71,6 +71,17 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   }
 
   Future<void> _guardarFactura() async {
+    // Validar que items no esté vacío
+    if (widget.facturaExtraida.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Materiales es un campo obligatorio'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     setState(() => _enviando = true);
 
     // Actualizar el objeto factura con los datos editados
@@ -179,11 +190,97 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
               isNumber: true,
             ),
             const SizedBox(height: 32),
-            BotonEnviar(
-              enviando: _enviando,
-              label: 'CONFIRMAR Y GUARDAR',
-              onTap: _guardarFactura,
+            // Sección de Materiales/Items
+            const Text(
+              'Materiales Detectados por IA',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 12),
+            if (widget.facturaExtraida.items.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_outlined, color: Colors.orange.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No se detectaron materiales. Debes agregar al menos uno.',
+                        style: TextStyle(
+                          color: Colors.orange.shade900,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.facturaExtraida.items.length,
+                itemBuilder: (context, index) {
+                  final item = widget.facturaExtraida.items[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.nombre,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Cantidad: ${item.cantidad} ${item.unidadMedida.nombre}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            Text(
+                              'Precio Unit: \$${item.precioUnitario}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Subtotal: \$${(item.cantidad * item.precioUnitario).toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4CAF50),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

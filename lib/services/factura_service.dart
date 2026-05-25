@@ -26,16 +26,16 @@ class FacturaService {
     }
   }
 
-  Future<bool> registrarFacturaConFoto({
+  Future<Factura?> procesarImagenOcr({
     required Uint8List bytes,
-    required DateTime fecha,
     required int proyectoId,
+    required int usuarioId,
   }) async {
     try {
       final token = await SecureStorage.read("accessToken");
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse(ApiConfig.facturas),
+        Uri.parse(ApiConfig.facturasOcr),
       );
       request.headers["Authorization"] = "Bearer $token";
       final proyectoIdHeader = ProyectoActual.id;
@@ -43,10 +43,8 @@ class FacturaService {
         request.headers["X-Proyecto-Id"] = proyectoIdHeader.toString();
       }
 
-      request.fields['fecha'] =
-          "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
       request.fields['proyectoId'] = proyectoId.toString();
-      request.fields['modo'] = 'ocr';
+      request.fields['usuarioId'] = usuarioId.toString();
 
       request.files.add(
         http.MultipartFile.fromBytes(
@@ -59,10 +57,40 @@ class FacturaService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      debugPrint("OCR Response Status: ${response.statusCode}");
+      debugPrint("OCR Response Body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decodedData = jsonDecode(response.body);
+        if (decodedData is Map<String, dynamic> &&
+            decodedData.containsKey('factura')) {
+          return Factura.fromJson(decodedData['factura']);
+        }
+      } else if (response.statusCode == 422) {
+        debugPrint("OCR Error 422: ${response.body}");
+        // Items vacío o factura no válida
+        throw Exception('Materiales es un campo obligatorio');
+      } else if (response.statusCode == 504) {
+        throw Exception('Tiempo de procesamiento agotado (OCR timeout)');
+      } else if (response.statusCode == 502) {
+        throw Exception('Error al procesar imagen (servicio externo)');
+      } else {
+        final errorMsg = _extractErrorMessage(response.body);
+        throw Exception(errorMsg ?? 'Error en OCR: ${response.statusCode}');
+      }
+      return null;
     } catch (e) {
-      debugPrint("Error en FacturaService (Foto): $e");
-      return false;
+      debugPrint("Error en FacturaService (OCR): $e");
+      rethrow;
+    }
+  }
+
+  String? _extractErrorMessage(String responseBody) {
+    try {
+      final data = jsonDecode(responseBody);
+      return data['mensaje']?.toString();
+    } catch (_) {
+      return null;
     }
   }
 

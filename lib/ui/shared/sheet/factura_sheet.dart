@@ -316,12 +316,46 @@ class _FacturaSheetState extends State<FacturaSheet> {
     try {
       final service = FacturaService();
       bool exito = false;
+      
       if (_modo == 'foto') {
-        exito = await service.registrarFacturaConFoto(
-          bytes: _fotoBytes!,
-          fecha: _fecha,
-          proyectoId: ProyectoActual.id ?? 0,
-        );
+        try {
+          final facturaOcr = await service.procesarImagenOcr(
+            bytes: _fotoBytes!,
+            proyectoId: ProyectoActual.id ?? 0,
+            usuarioId: UsuarioActual.id ?? 0,
+          );
+          
+          if (facturaOcr != null && mounted) {
+            Navigator.pop(context); // Cierra el sheet actual
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) =>
+                  build_check_app_ocr_review.FacturaOcrReviewSheet(
+                    facturaExtraida: facturaOcr,
+                  ),
+            );
+            exito = true;
+          }
+        } on Exception catch (e) {
+          String errorMsg = 'Error al procesar la imagen';
+          
+          final errorStr = e.toString();
+          if (errorStr.contains('Materiales es un campo obligatorio')) {
+            errorMsg = 'La IA no detectó materiales. Intenta con otra imagen.';
+          } else if (errorStr.contains('timeout')) {
+            errorMsg = 'Tiempo de procesamiento agotado. Intenta de nuevo.';
+          } else if (errorStr.contains('servicio externo')) {
+            errorMsg = 'Error en el servicio de OCR. Intenta más tarde.';
+          } else if (errorStr.contains('Formato de archivo')) {
+            errorMsg = 'Formato de archivo inválido. Solo JPG y PNG.';
+          } else if (errorStr.contains('vacío')) {
+            errorMsg = 'El archivo no puede estar vacío.';
+          }
+          
+          _mostrarSnack(errorMsg, isError: true);
+        }
       } else {
         final f = Factura(
           numeroFactura: _numeroCtrl.text,
@@ -335,8 +369,8 @@ class _FacturaSheetState extends State<FacturaSheet> {
           items: _itemsSeleccionados,
         );
         exito = await service.registrarFacturaManual(f);
+        if (exito && mounted) Navigator.pop(context, true);
       }
-      if (exito && mounted) Navigator.pop(context, true);
     } catch (e) {
       _mostrarSnack('Error en el servidor');
     } finally {
@@ -380,47 +414,12 @@ class _FacturaSheetState extends State<FacturaSheet> {
                 sourceLabel: _fotoOrigen,
               ),
               const SizedBox(height: 32),
-              BotonEnviar(
-                enviando: _enviando,
-                label: 'REGISTRAR FACTURA',
-                onTap: _enviar,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () {
-                    // Botón de prueba para simular datos devueltos por IA
-                    final facturaExtraida = Factura(
-                      proyectoId: 1,
-                      usuarioId: UsuarioActual.id ?? 0,
-                      proveedor: 'Ferretería El Constructor (Leído por IA)',
-                      numeroFactura: 'FAC-88392',
-                      fecha: DateTime.now().subtract(const Duration(days: 1)),
-                      valorTotal: 1545000.0,
-                      fechaCreacion: DateTime.now(),
-                      observaciones: 'Extraído vía OCR',
-                    );
-
-                    Navigator.pop(context); // Cierra el sheet actual
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) =>
-                          build_check_app_ocr_review.FacturaOcrReviewSheet(
-                            facturaExtraida: facturaExtraida,
-                          ),
-                    );
-                  },
-                  icon: const Icon(Icons.science, color: Colors.orange),
-                  label: const Text(
-                    "Simular Respuesta de IA (Test)",
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                ),
-              ),
-            ] else ...[
+               BotonEnviar(
+                 enviando: _enviando,
+                 label: 'REGISTRAR FACTURA',
+                 onTap: _enviar,
+               ),
+             ] else ...[
               Form(
                 key: _formKey,
                 child: Column(
