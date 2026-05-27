@@ -46,9 +46,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     _numeroCtrl = TextEditingController(
       text: widget.facturaExtraida.numeroFactura,
     );
-    _valorCtrl = TextEditingController(
-      text: widget.facturaExtraida.valorTotal?.toString() ?? '',
-    );
+    _valorCtrl = TextEditingController(text: '0');
 
     _fechaSeleccionada = widget.facturaExtraida.fecha;
     _fechaCtrl = TextEditingController(
@@ -88,6 +86,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
         _itemUnidades.add(item.unidadMedida);
       }
     }
+    _totalFromInputs;
   }
 
 
@@ -142,8 +141,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
           ? 'Desconocido'
           : _proveedorCtrl.text,
       observaciones: widget.facturaExtraida.observaciones,
-      valorTotal:
-          double.tryParse(_valorCtrl.text) ?? widget.facturaExtraida.valorTotal,
+      valorTotal: _totalFromInputs,
       proyectoId: widget.facturaExtraida.proyectoId,
       usuarioId: widget.facturaExtraida.usuarioId,
       urlImagen: widget.facturaExtraida.urlImagen,
@@ -240,7 +238,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
               'Valor Total',
               _valorCtrl,
               Icons.attach_money,
-              isNumber: true,
+              readOnly: true,
             ),
             const SizedBox(height: 32),
             // Sección de Materiales/Items
@@ -261,6 +259,49 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
                   style: TextStyle(color: Color(0xFF4CAF50)),
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _enviando ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _enviando ? null : _guardarFactura,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _enviando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Enviar'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
           ],
@@ -309,6 +350,9 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   Widget _buildItemsEditor() {
     return Column(
       children: List.generate(_items.length, (index) {
+        final cantidad = double.tryParse(_itemCantidadCtrls[index].text) ?? 0;
+        final precio = double.tryParse(_itemPrecioCtrls[index].text) ?? 0;
+        final subtotal = cantidad * precio;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
@@ -361,6 +405,21 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
                   ),
                 ],
               ),
+              if (subtotal > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Subtotal: \$${subtotal.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4CAF50),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -375,6 +434,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   }) {
     return TextField(
       controller: controller,
+      onChanged: (_) => setState(() => _totalFromInputs),
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
@@ -469,6 +529,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
       _itemCantidadCtrls.removeAt(index).dispose();
       _itemPrecioCtrls.removeAt(index).dispose();
       _itemUnidades.removeAt(index);
+      _totalFromInputs;
     });
   }
 
@@ -499,6 +560,18 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     }
 
     _items = updated;
+    _totalFromInputs;
+  }
+
+  double get _totalFromInputs {
+    double total = 0;
+    for (int i = 0; i < _itemCantidadCtrls.length; i++) {
+      final cantidad = double.tryParse(_itemCantidadCtrls[i].text) ?? 0;
+      final precio = double.tryParse(_itemPrecioCtrls[i].text) ?? 0;
+      total += cantidad * precio;
+    }
+    _valorCtrl.text = total.toStringAsFixed(0);
+    return total;
   }
 
   @override

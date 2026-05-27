@@ -12,6 +12,8 @@ class MovimientoResumen {
   final String materialNombre;
   final String unidadMedida;
   final DateTime fechaCreacion;
+  final int? facturaId;
+  final String? facturaNumero;
 
   const MovimientoResumen({
     required this.id,
@@ -24,6 +26,8 @@ class MovimientoResumen {
     required this.proyectoId,
     required this.materialNombre,
     required this.unidadMedida,
+    this.facturaId,
+    this.facturaNumero,
   });
 
   String get descripcionFormateada {
@@ -52,6 +56,10 @@ class MovimientoResumen {
       usuarioId: UsuarioActual.id ?? 0,
       materialNombre: materialNombre,
       unidadMedida: unidadMedida,
+      facturaId: (json['factura']?['id'] as num?)?.toInt() ??
+          (json['facturaId'] as num?)?.toInt(),
+      facturaNumero: json['factura']?['numeroFactura']?.toString() ??
+          json['facturaNumero']?.toString(),
     );
   }
 
@@ -67,6 +75,8 @@ class MovimientoResumen {
         proyectoId: ProyectoActual.id ?? 0,
         materialNombre: nombre,
         unidadMedida: unidad,
+        facturaId: facturaId,
+        facturaNumero: facturaNumero,
       );
 
   String tiempoRelativo(DateTime momentoActual) {

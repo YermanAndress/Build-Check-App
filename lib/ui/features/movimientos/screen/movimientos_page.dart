@@ -41,8 +41,7 @@ class _MovimientosPageState extends State<MovimientosPage> {
       key: ValueKey(_proyectoKey),
       fetchData: () async {
         final mapa = await MovimientoService().obtenerMapaMovimientos();
-        return mapa.values.toList()
-          ..sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+        return mapa.values.toList();
       },
       searchPredicate: (movimiento) => movimiento.materialNombre,
       itemBuilder: (movimiento) => MovimientoCard(movimiento: movimiento),
@@ -50,6 +49,8 @@ class _MovimientosPageState extends State<MovimientosPage> {
       hintText: 'Buscar por material...',
       emptyMessage: 'No hay movimientos registrados aún',
       noResultsMessage: 'No se encontraron movimientos',
+      enableSortToggle: true,
+      sortValue: (mov) => mov.fechaCreacion.toIso8601String(),
     );
   }
 }

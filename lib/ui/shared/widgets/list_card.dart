@@ -10,6 +10,8 @@ class SearchableList<T> extends StatefulWidget {
   final String
   noResultsMessage; // mensaje cuando la búsqueda no arroja resultados
   final Widget? floatingActionButton; // botón flotante opcional
+  final bool enableSortToggle;
+  final String Function(T)? sortValue;
 
   const SearchableList({
     super.key,
@@ -21,6 +23,8 @@ class SearchableList<T> extends StatefulWidget {
     this.emptyMessage = "No hay registros aún",
     this.noResultsMessage = "No se encontraron resultados",
     this.floatingActionButton,
+    this.enableSortToggle = false,
+    this.sortValue,
   });
 
   @override
@@ -31,6 +35,7 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
   List<T> _allItems = [];
   List<T> _filteredItems = [];
   bool _loading = true;
+  bool _isDescending = true;
 
   @override
   void initState() {
@@ -44,23 +49,45 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
     if (mounted) {
       setState(() {
         _allItems = items;
-        _filteredItems = items;
+        _filteredItems = _sortedItems(items);
         _loading = false;
       });
     }
   }
 
+  List<T> _sortedItems(List<T> items) {
+    if (!widget.enableSortToggle || widget.sortValue == null) {
+      return items;
+    }
+
+    final sorted = [...items];
+    sorted.sort((a, b) {
+      final va = widget.sortValue!(a);
+      final vb = widget.sortValue!(b);
+      return _isDescending ? vb.compareTo(va) : va.compareTo(vb);
+    });
+    return sorted;
+  }
+
   void _filter(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredItems = _allItems;
+        _filteredItems = _sortedItems(_allItems);
       } else {
         final lowerQuery = query.toLowerCase();
-        _filteredItems = _allItems.where((item) {
+        final filtered = _allItems.where((item) {
           final searchText = widget.searchPredicate(item);
           return searchText.toLowerCase().contains(lowerQuery);
         }).toList();
+        _filteredItems = _sortedItems(filtered);
       }
+    });
+  }
+
+  void _toggleOrder() {
+    setState(() {
+      _isDescending = !_isDescending;
+      _filteredItems = _sortedItems(_filteredItems);
     });
   }
 
@@ -83,19 +110,43 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              onChanged: _filter,
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF4CAF50)),
-                filled: true,
-                fillColor: const Color(0xFFF5F5F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: _filter,
+                    decoration: InputDecoration(
+                      hintText: widget.hintText,
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF4CAF50),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF5F5F5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
+                if (widget.enableSortToggle && widget.sortValue != null) ...[
+                  const SizedBox(width: 10),
+                  IconButton(
+                    onPressed: _toggleOrder,
+                    icon: Icon(
+                      _isDescending
+                          ? Icons.swap_vert
+                          : Icons.swap_vert_circle,
+                      color: const Color(0xFF4CAF50),
+                    ),
+                    tooltip: _isDescending
+                        ? 'Orden: más nuevo'
+                        : 'Orden: más viejo',
+                  ),
+                ],
+              ],
             ),
           ),
         ),

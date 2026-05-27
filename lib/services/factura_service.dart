@@ -208,4 +208,25 @@ class FacturaService {
       return [];
     }
   }
+
+  Future<String?> obtenerUrlImagenFactura(int facturaId) async {
+    try {
+      final response = await HttpInterceptor.send(() async {
+        return http.get(
+          Uri.parse(ApiConfig.facturaImageUrl(facturaId)),
+          headers: await AuthHeader.getHeaders(),
+        );
+      });
+
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decodedData = jsonDecode(response.body);
+      return decodedData['url']?.toString();
+    } catch (e) {
+      debugPrint("Error obteniendo URL de imagen: $e");
+      return null;
+    }
+  }
 }

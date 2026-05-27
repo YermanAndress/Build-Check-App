@@ -21,6 +21,8 @@ class ApiConfig {
   static const String facturasOcr = '$baseUrl/facturas-service/ocr';
   static const String facturasWithImage =
       '$baseUrl/facturas-service/facturas/with-image';
+  static String facturaImageUrl(int id) =>
+      '$baseUrl/facturas-service/facturas/$id/image-url';
   static const String alertas = '$baseUrl/materiales-service/alertas';
   static const String usuarios = '$baseUrl/usuarios-service';
   static const String proyectos = '$baseUrl/proyecto-service/proyectos';
