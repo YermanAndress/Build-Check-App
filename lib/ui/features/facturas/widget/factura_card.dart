@@ -18,6 +18,7 @@ class FacturaCard extends StatelessWidget {
       locale: 'es_CO',
     );
     final fFecha = DateFormat('dd MMM yyyy', 'es_ES');
+    final now = DateTime.now();
 
     return CardBase(
       icon: Icons.receipt_long_outlined,
@@ -51,6 +52,11 @@ class FacturaCard extends StatelessWidget {
           ),
           Text(
             fFecha.format(factura.fecha),
+            style: const TextStyle(color: Colors.grey, fontSize: 11),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            factura.tiempoRelativo(now),
             style: const TextStyle(color: Colors.grey, fontSize: 11),
           ),
         ],

@@ -1,6 +1,14 @@
+import 'dart:io';
+
+import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/services/role_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:build_check_app/models/factura_model.dart';
 
@@ -19,6 +27,8 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
   late TextEditingController _obsCtrl;
   bool _isSaving = false;
   bool _puedeEditar = false;
+  bool _savingImage = false;
+  String? _signedImageUrl;
 
   @override
   void initState() {
@@ -27,6 +37,19 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
     _proveedorCtrl = TextEditingController(text: widget.factura.proveedor);
     _numeroCtrl = TextEditingController(text: widget.factura.numeroFactura);
     _obsCtrl = TextEditingController(text: widget.factura.observaciones);
+    _cargarUrlImagen();
+  }
+
+  Future<void> _cargarUrlImagen() async {
+    if (widget.factura.id == null) {
+      return;
+    }
+    final url = await FacturaService().obtenerUrlImagenFactura(
+      widget.factura.id!,
+    );
+    if (mounted) {
+      setState(() => _signedImageUrl = url);
+    }
   }
 
   Future<void> _guardarCambios() async {
@@ -41,6 +64,59 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Factura actualizada correctamente ✓')),
       );
+    }
+  }
+
+  Future<void> _copiarUrl() async {
+    final url = _signedImageUrl;
+    if (url == null || url.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('URL copiada al portapapeles')),
+      );
+    }
+  }
+
+  Future<void> _descargarImagen() async {
+    final url = _signedImageUrl;
+    if (url == null || url.isEmpty) return;
+
+    setState(() => _savingImage = true);
+
+    try {
+      if (kIsWeb) {
+        final uri = Uri.parse(url);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        throw Exception('No se pudo descargar la imagen');
+      }
+
+      final Uint8List bytes = response.bodyBytes;
+      final tempFile = File(
+        '${Directory.systemTemp.path}/factura_${widget.factura.id ?? DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(bytes);
+      await Gal.putImage(tempFile.path, album: 'BuildCheck');
+      await tempFile.delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Imagen guardada en galería')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al descargar la imagen')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingImage = false);
     }
   }
 
@@ -75,6 +151,11 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
 
             _buildInfoCard(fFecha),
             const SizedBox(height: 20),
+
+            if (_signedImageUrl != null && _signedImageUrl!.isNotEmpty) ...[
+              _buildImageCard(),
+              const SizedBox(height: 20),
+            ],
 
             const Text(
               "Materiales Incluidos",
@@ -140,6 +221,69 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
           ),
           const Divider(height: 30),
           _buildField('Observaciones', _obsCtrl, Icons.notes),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageCard() {
+    final url = _signedImageUrl!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Foto de la factura',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              url,
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _copiarUrl,
+                  icon: const Icon(Icons.copy_outlined, size: 18),
+                  label: const Text('Copiar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _savingImage ? null : _descargarImagen,
+                  icon: _savingImage
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.download_outlined, size: 18),
+                  label: const Text('Descargar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

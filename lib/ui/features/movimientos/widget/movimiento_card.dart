@@ -49,6 +49,14 @@ class MovimientoCard extends StatelessWidget {
             movimiento.tiempoRelativo(now),
             style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
           ),
+          const SizedBox(height: 2),
+          Text(
+            movimiento.facturaNumero != null &&
+                    movimiento.facturaNumero!.isNotEmpty
+                ? 'Factura: ${movimiento.facturaNumero}'
+                : 'Sin factura',
+            style: const TextStyle(color: Colors.grey, fontSize: 11),
+          ),
         ],
       ),
       rightContent: Column(

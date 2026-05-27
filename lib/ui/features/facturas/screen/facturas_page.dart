@@ -45,6 +45,8 @@ class _FacturasPageState extends State<FacturasPage> {
       hintText: 'Buscar por proveedor o número...',
       emptyMessage: 'No hay facturas registradas aún',
       noResultsMessage: 'No se encontraron resultados',
+      enableSortToggle: true,
+      sortValue: (factura) => factura.fechaCreacion.toIso8601String(),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF4CAF50),
         onPressed: () {

@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:build_check_app/core/proyecto_actual.dart';
 import 'package:build_check_app/core/usuario_actual.dart';
-import 'package:build_check_app/main.dart';
 import 'package:build_check_app/services/auth_header.dart';
-import 'package:build_check_app/services/http_handler.dart';
 import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -59,6 +57,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
     );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       setState(() {
         _fotoSeleccionada = picked;
         _fotoBytes = bytes;
@@ -79,6 +78,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
   Future<void> _cargarMateriales() async {
     final proyectoId = ProyectoActual.id;
     if (proyectoId == null) {
+      if (!mounted) return;
       setState(() {
         errorMateriales = 'No hay proyecto seleccionado';
         _loadingMateriales = false;
@@ -92,6 +92,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
           headers: await AuthHeader.getHeaders(),
         );
       });
+      if (!mounted) return;
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -109,6 +110,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMateriales = 'Sin conexión';
         _loadingMateriales = false;
@@ -246,7 +248,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withAlpha(20),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -256,7 +258,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
                             shrinkWrap: true,
                             physics: const ClampingScrollPhysics(),
                             itemCount: _materialFiltrados.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final m = _materialFiltrados[index];

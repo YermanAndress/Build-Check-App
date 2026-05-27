@@ -1,46 +1,62 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# --- Específicos de Flutter/Dart en subcarpetas ---
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.packages
 **/doc/api/
+**/pub/
+**/coverage/
+**/.pub/
+**/.atom/
+**/.build/
+**/.buildlog/
+**/.history
+**/.svn/
+**/.swiftpm/
+
+# --- Android ---
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/local
+**/android/app/release/
+**/android/gradlew
+**/android/gradlew.bat
+**/GeneratedPluginRegistrant.java
+**/.gradle/
+**/gradle/
+**/*.keystore
+**/*.jks
+
+# --- iOS/macOS ---
 **/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+**/ios/Flutter/Ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/Pods/
+**/.symlinks/
 
-# Symbolication related
-app.*.symbols
+# --- IDEs y Editores ---
+**/.idea/
+**/*.iml
+**/*.ipr
+**/*.iws
+**/.vscode/
 
-# Obfuscation related
-app.*.map.json
+# --- Sistema y temporales ---
+**/.DS_Store
+**/*.log
+**/*.swp
+**/*.class
+**/*.pyc
+**/node_modules/
+**/history
+**/svn/
+**/migrate_working_dir/
+**/app.*.symbols
+**/app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
+**/.env
+**/google-services.json
+**/firebase_options.dart
+**/firebase.json

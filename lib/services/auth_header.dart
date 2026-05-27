@@ -1,10 +1,11 @@
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthHeader {
   static Future<Map<String, String>> getHeaders({bool json = true}) async {
     final token = await SecureStorage.read("accessToken");
-    print("token: $token");
+    debugPrint("token: $token");
     final headers = <String, String>{};
     if (token != null && token.isNotEmpty) {
       headers["Authorization"] = "Bearer $token";

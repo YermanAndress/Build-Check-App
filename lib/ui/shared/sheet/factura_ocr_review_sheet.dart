@@ -1,14 +1,21 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:build_check_app/models/factura_model.dart';
 import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/ui/shared/widgets/form_utils.dart';
+import 'package:build_check_app/enum/unidad_medida.dart';
 
 class FacturaOcrReviewSheet extends StatefulWidget {
   final Factura facturaExtraida;
+  final Uint8List? imageBytes;
 
-  const FacturaOcrReviewSheet({super.key, required this.facturaExtraida});
+  const FacturaOcrReviewSheet({
+    super.key,
+    required this.facturaExtraida,
+    this.imageBytes,
+  });
 
   @override
   State<FacturaOcrReviewSheet> createState() => _FacturaOcrReviewSheetState();
@@ -21,6 +28,12 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   late TextEditingController _fechaCtrl;
   late DateTime _fechaSeleccionada;
   bool _enviando = false;
+  Uint8List? _imageBytes;
+  late List<FacturaMaterialItem> _items;
+  final List<TextEditingController> _itemNombreCtrls = [];
+  final List<TextEditingController> _itemCantidadCtrls = [];
+  final List<TextEditingController> _itemPrecioCtrls = [];
+  final List<UnidadMedida> _itemUnidades = [];
 
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -33,14 +46,49 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     _numeroCtrl = TextEditingController(
       text: widget.facturaExtraida.numeroFactura,
     );
-    _valorCtrl = TextEditingController(
-      text: widget.facturaExtraida.valorTotal?.toString() ?? '',
-    );
+    _valorCtrl = TextEditingController(text: '0');
 
     _fechaSeleccionada = widget.facturaExtraida.fecha;
     _fechaCtrl = TextEditingController(
       text: _dateFormat.format(_fechaSeleccionada),
     );
+
+    _imageBytes = widget.imageBytes;
+
+    _items = widget.facturaExtraida.items
+        .map(
+          (item) => FacturaMaterialItem(
+            materialId: item.materialId,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            unidadMedida: item.unidadMedida,
+            usuarioId: item.usuarioId,
+            fechaCreacion: item.fechaCreacion,
+          ),
+        )
+        .toList();
+    if (_items.isEmpty) {
+      _addItem();
+    } else {
+      for (final item in _items) {
+        _itemNombreCtrls.add(TextEditingController(text: item.nombre));
+        _itemCantidadCtrls.add(
+          TextEditingController(
+            text: item.cantidad == 0 ? '' : item.cantidad.toString(),
+          ),
+        );
+        _itemPrecioCtrls.add(
+          TextEditingController(
+            text: item.precioUnitario == 0
+                ? ''
+                : item.precioUnitario.toString(),
+          ),
+        );
+        _itemUnidades.add(item.unidadMedida);
+      }
+    }
+    _totalFromInputs;
   }
 
   Future<void> _seleccionarFecha(BuildContext context) async {
@@ -71,6 +119,18 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   }
 
   Future<void> _guardarFactura() async {
+    _syncItemsFromInputs();
+
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Materiales es un campo obligatorio'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     setState(() => _enviando = true);
 
     // Actualizar el objeto factura con los datos editados
@@ -82,18 +142,21 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
           ? 'Desconocido'
           : _proveedorCtrl.text,
       observaciones: widget.facturaExtraida.observaciones,
-      valorTotal:
-          double.tryParse(_valorCtrl.text) ?? widget.facturaExtraida.valorTotal,
+      valorTotal: _totalFromInputs,
       proyectoId: widget.facturaExtraida.proyectoId,
       usuarioId: widget.facturaExtraida.usuarioId,
       urlImagen: widget.facturaExtraida.urlImagen,
-      items: widget.facturaExtraida.items,
+      items: _items,
       fechaCreacion: widget.facturaExtraida.fechaCreacion,
     );
 
-    final success = await FacturaService().registrarFacturaManual(
-      facturaAGuardar,
-    );
+    final service = FacturaService();
+    final success = _imageBytes == null
+        ? await service.registrarFacturaManual(facturaAGuardar)
+        : await service.registrarFacturaConImagen(
+            factura: facturaAGuardar,
+            bytes: _imageBytes!,
+          );
 
     if (mounted) {
       setState(() => _enviando = false);
@@ -176,14 +239,72 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
               'Valor Total',
               _valorCtrl,
               Icons.attach_money,
-              isNumber: true,
+              readOnly: true,
             ),
             const SizedBox(height: 32),
-            BotonEnviar(
-              enviando: _enviando,
-              label: 'CONFIRMAR Y GUARDAR',
-              onTap: _guardarFactura,
+            // Sección de Materiales/Items
+            const Text(
+              'Materiales Detectados por IA',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 12),
+            _buildItemsEditor(),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _addItem,
+                icon: const Icon(Icons.add, color: Color(0xFF4CAF50)),
+                label: const Text(
+                  'Agregar material',
+                  style: TextStyle(color: Color(0xFF4CAF50)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _enviando ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _enviando ? null : _guardarFactura,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _enviando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Enviar'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -227,8 +348,258 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     );
   }
 
+  Widget _buildItemsEditor() {
+    return Column(
+      children: List.generate(_items.length, (index) {
+        final cantidad = double.tryParse(_itemCantidadCtrls[index].text) ?? 0;
+        final precio = double.tryParse(_itemPrecioCtrls[index].text) ?? 0;
+        final subtotal = cantidad * precio;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12), // Más respiro interno
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ─── NIVEL 1: Nombre del Material (Ancho completo) ───
+              _buildItemField('Material', _itemNombreCtrls[index]),
+              const SizedBox(height: 12),
+
+              // ─── NIVEL 2: Cantidad y Unidad (Comparten fila 50/50) ───
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildItemField(
+                      'Cantidad',
+                      _itemCantidadCtrls[index],
+                      isNumber: true,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildUnidadDropdown(index)),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // ─── NIVEL 3: Precio unitario y Botón eliminar ───
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildItemField(
+                      'Valor Unitario',
+                      _itemPrecioCtrls[index],
+                      isNumber: true,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // El botón de basura ahora tiene una presencia clara y no aprieta el diseño
+                  IconButton(
+                    onPressed: () => _removeItem(index),
+                    icon: const Icon(Icons.delete_outline, size: 22),
+                    color: Colors.redAccent,
+                    tooltip: 'Eliminar material',
+                  ),
+                ],
+              ),
+
+              // ─── NIVEL 4: Subtotal (Solo si aplica) ───
+              if (subtotal > 0) ...[
+                const Divider(
+                  height: 16,
+                  thickness: 0.5,
+                ), // Una línea sutil divisoria
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Subtotal: \$${subtotal.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4CAF50),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildItemField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
+    return TextField(
+      controller: controller,
+      onChanged: (_) => setState(() => _totalFromInputs),
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 11),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        isDense: true,
+        //contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      ),
+    );
+  }
+
+  Widget _buildUnidadDropdown(int index) {
+    return DropdownButtonFormField<UnidadMedida>(
+      initialValue: _itemUnidades[index],
+      // ─── ACTIVA ESTO: Obliga al contenido a no salirse de la caja ───
+      isExpanded: true,
+
+      // Achicamos un poco la flecha para ganar espacio
+      icon: const Icon(Icons.arrow_drop_down, color: Colors.blueGrey),
+      iconSize: 20,
+
+      items: UnidadMedida.values
+          .map(
+            (unidad) => DropdownMenuItem(
+              value: unidad,
+              child: Text(
+                unidad.nombre,
+                style: const TextStyle(fontSize: 11, color: Colors.black87),
+                overflow: TextOverflow
+                    .ellipsis, // Esto ahora sí funcionará bajo presión
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _itemUnidades[index] = value);
+      },
+      style: const TextStyle(fontSize: 11),
+      decoration: InputDecoration(
+        labelText: 'Unidad',
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 11),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        isDense: true,
+        // Reducimos el padding horizontal a 4 para raspar los últimos píxeles necesarios
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      ),
+    );
+  }
+
+  void _addItem() {
+    setState(() {
+      final newItem = FacturaMaterialItem(
+        materialId: null,
+        nombre: '',
+        cantidad: 0,
+        precioUnitario: 0,
+        unidadMedida: UnidadMedida.UNIDAD,
+        usuarioId: widget.facturaExtraida.usuarioId,
+        fechaCreacion: null,
+      );
+      _items.add(newItem);
+      _itemNombreCtrls.add(TextEditingController());
+      _itemCantidadCtrls.add(TextEditingController());
+      _itemPrecioCtrls.add(TextEditingController());
+      _itemUnidades.add(UnidadMedida.UNIDAD);
+    });
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _items.removeAt(index);
+      _itemNombreCtrls.removeAt(index).dispose();
+      _itemCantidadCtrls.removeAt(index).dispose();
+      _itemPrecioCtrls.removeAt(index).dispose();
+      _itemUnidades.removeAt(index);
+      _totalFromInputs;
+    });
+  }
+
+  void _syncItemsFromInputs() {
+    final List<FacturaMaterialItem> updated = [];
+
+    for (int i = 0; i < _items.length; i++) {
+      final nombre = _itemNombreCtrls[i].text.trim();
+      final cantidad = double.tryParse(_itemCantidadCtrls[i].text) ?? 0;
+      final precioUnitario = double.tryParse(_itemPrecioCtrls[i].text) ?? 0;
+      final unidad = _itemUnidades[i];
+
+      if (nombre.isEmpty && cantidad == 0 && precioUnitario == 0) {
+        continue;
+      }
+
+      updated.add(
+        FacturaMaterialItem(
+          materialId: _items[i].materialId,
+          nombre: nombre.isEmpty ? 'Sin nombre' : nombre,
+          cantidad: cantidad,
+          precioUnitario: precioUnitario,
+          unidadMedida: unidad,
+          usuarioId: widget.facturaExtraida.usuarioId,
+          fechaCreacion: _items[i].fechaCreacion,
+        ),
+      );
+    }
+
+    _items = updated;
+    _totalFromInputs;
+  }
+
+  double get _totalFromInputs {
+    double total = 0;
+    for (int i = 0; i < _itemCantidadCtrls.length; i++) {
+      final cantidad = double.tryParse(_itemCantidadCtrls[i].text) ?? 0;
+      final precio = double.tryParse(_itemPrecioCtrls[i].text) ?? 0;
+      total += cantidad * precio;
+    }
+    _valorCtrl.text = total.toStringAsFixed(0);
+    return total;
+  }
+
   @override
   void dispose() {
+    for (final controller in _itemNombreCtrls) {
+      controller.dispose();
+    }
+    for (final controller in _itemCantidadCtrls) {
+      controller.dispose();
+    }
+    for (final controller in _itemPrecioCtrls) {
+      controller.dispose();
+    }
     _proveedorCtrl.dispose();
     _numeroCtrl.dispose();
     _valorCtrl.dispose();

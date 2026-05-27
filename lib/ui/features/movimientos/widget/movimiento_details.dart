@@ -249,6 +249,16 @@ class _MovimientoDetailScreenState extends State<MovimientoDetailScreen> {
                     Icons.access_time_outlined,
                     valueColor: Colors.blueGrey,
                   ),
+                  const Divider(height: 30),
+
+                  _buildReadOnlyInfo(
+                    'Factura vinculada',
+                    widget.movimiento.facturaNumero != null &&
+                            widget.movimiento.facturaNumero!.isNotEmpty
+                        ? widget.movimiento.facturaNumero!
+                        : 'Sin factura',
+                    Icons.receipt_long_outlined,
+                  ),
                 ],
               ),
             ),

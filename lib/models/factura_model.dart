@@ -79,6 +79,14 @@ class Factura {
   @override
   String toString() =>
       'Factura(id: $id, proveedor: $proveedor, total: $valorTotal)';
+
+  String tiempoRelativo(DateTime momentoActual) {
+    final diff = momentoActual.difference(fechaCreacion);
+    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes}min';
+    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
+    if (diff.inDays == 1) return 'Ayer';
+    return 'Hace ${diff.inDays}d';
+  }
 }
 
 class FacturaMaterialItem {
@@ -131,6 +139,5 @@ class FacturaMaterialItem {
     'cantidad': cantidad,
     'precioUnitario': precioUnitario,
     'unidadMedida': unidadMedida.name,
-    'usuarioId': usuarioId,
   };
 }

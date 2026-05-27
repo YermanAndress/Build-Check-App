@@ -49,6 +49,8 @@ class _MaterialesPageState extends State<MaterialesPage> {
       hintText: 'Buscar material...',
       emptyMessage: 'No hay materiales registrados aún',
       noResultsMessage: 'No se encontraron resultados',
+      enableSortToggle: true,
+      sortValue: (m) => (m.fechaCreacion ?? DateTime(2000)).toIso8601String(),
     );
   }
 }
