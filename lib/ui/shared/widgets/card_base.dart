@@ -63,7 +63,7 @@ class CardBase extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(child: leftContent),
                     const SizedBox(width: 8),
-                    rightContent,
+                    Flexible(child: rightContent),
                     if (showChevron) ...[
                       const SizedBox(width: 8),
                       const Icon(

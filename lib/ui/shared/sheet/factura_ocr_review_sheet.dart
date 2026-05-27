@@ -80,7 +80,9 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
         );
         _itemPrecioCtrls.add(
           TextEditingController(
-            text: item.precioUnitario == 0 ? '' : item.precioUnitario.toString(),
+            text: item.precioUnitario == 0
+                ? ''
+                : item.precioUnitario.toString(),
           ),
         );
         _itemUnidades.add(item.unidadMedida);
@@ -88,7 +90,6 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
     }
     _totalFromInputs;
   }
-
 
   Future<void> _seleccionarFecha(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -355,71 +356,74 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
         final subtotal = cantidad * precio;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12), // Más respiro interno
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ─── NIVEL 1: Nombre del Material (Ancho completo) ───
+              _buildItemField('Material', _itemNombreCtrls[index]),
+              const SizedBox(height: 12),
+
+              // ─── NIVEL 2: Cantidad y Unidad (Comparten fila 50/50) ───
               Row(
                 children: [
                   Expanded(
-                    flex: 3,
                     child: _buildItemField(
-                      'Material',
-                      _itemNombreCtrls[index],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildItemField(
-                      'Cant',
+                      'Cantidad',
                       _itemCantidadCtrls[index],
                       isNumber: true,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildUnidadDropdown(index),
-                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildUnidadDropdown(index)),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+
+              // ─── NIVEL 3: Precio unitario y Botón eliminar ───
               Row(
                 children: [
                   Expanded(
                     child: _buildItemField(
-                      'Valor unitario',
+                      'Valor Unitario',
                       _itemPrecioCtrls[index],
                       isNumber: true,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
+                  // El botón de basura ahora tiene una presencia clara y no aprieta el diseño
                   IconButton(
                     onPressed: () => _removeItem(index),
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(Icons.delete_outline, size: 22),
                     color: Colors.redAccent,
                     tooltip: 'Eliminar material',
                   ),
                 ],
               ),
-              if (subtotal > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Subtotal: \$${subtotal.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF4CAF50),
-                      ),
+
+              // ─── NIVEL 4: Subtotal (Solo si aplica) ───
+              if (subtotal > 0) ...[
+                const Divider(
+                  height: 16,
+                  thickness: 0.5,
+                ), // Una línea sutil divisoria
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Subtotal: \$${subtotal.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4CAF50),
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         );
@@ -438,24 +442,26 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
+      style: const TextStyle(fontSize: 13),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 12),
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 11),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        isDense: true,
+        //contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
     );
   }
@@ -463,42 +469,51 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
   Widget _buildUnidadDropdown(int index) {
     return DropdownButtonFormField<UnidadMedida>(
       initialValue: _itemUnidades[index],
+      // ─── ACTIVA ESTO: Obliga al contenido a no salirse de la caja ───
+      isExpanded: true,
+
+      // Achicamos un poco la flecha para ganar espacio
+      icon: const Icon(Icons.arrow_drop_down, color: Colors.blueGrey),
+      iconSize: 20,
+
       items: UnidadMedida.values
           .map(
             (unidad) => DropdownMenuItem(
               value: unidad,
               child: Text(
                 unidad.nombre,
-                style: const TextStyle(fontSize: 12),
-                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: Colors.black87),
+                overflow: TextOverflow
+                    .ellipsis, // Esto ahora sí funcionará bajo presión
               ),
             ),
           )
           .toList(),
       onChanged: (value) {
-        if (value == null) {
-          return;
-        }
+        if (value == null) return;
         setState(() => _itemUnidades[index] = value);
       },
+      style: const TextStyle(fontSize: 11),
       decoration: InputDecoration(
         labelText: 'Unidad',
-        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 12),
+        labelStyle: const TextStyle(color: Colors.blueGrey, fontSize: 11),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        isDense: true,
+        // Reducimos el padding horizontal a 4 para raspar los últimos píxeles necesarios
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       ),
     );
   }

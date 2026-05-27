@@ -1,8 +1,10 @@
+import 'dart:io';
+
 import 'package:build_check_app/services/factura_service.dart';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
@@ -42,7 +44,9 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
     if (widget.factura.id == null) {
       return;
     }
-    final url = await FacturaService().obtenerUrlImagenFactura(widget.factura.id!);
+    final url = await FacturaService().obtenerUrlImagenFactura(
+      widget.factura.id!,
+    );
     if (mounted) {
       setState(() => _signedImageUrl = url);
     }
@@ -93,22 +97,16 @@ class _FacturaDetailsState extends State<FacturaDetailsScreen> {
       }
 
       final Uint8List bytes = response.bodyBytes;
-      final result = await ImageGallerySaver.saveImage(
-        bytes,
-        quality: 100,
-        name: 'factura_${widget.factura.id ?? DateTime.now().millisecondsSinceEpoch}',
+      final tempFile = File(
+        '${Directory.systemTemp.path}/factura_${widget.factura.id ?? DateTime.now().millisecondsSinceEpoch}.jpg',
       );
+      await tempFile.writeAsBytes(bytes);
+      await Gal.putImage(tempFile.path, album: 'BuildCheck');
+      await tempFile.delete();
 
       if (mounted) {
-        final isSuccess = result['isSuccess'] == true || result['isSuccess'] == 1;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isSuccess
-                  ? 'Imagen guardada en galería'
-                  : 'No se pudo guardar la imagen',
-            ),
-          ),
+          const SnackBar(content: Text('Imagen guardada en galería')),
         );
       }
     } catch (e) {
