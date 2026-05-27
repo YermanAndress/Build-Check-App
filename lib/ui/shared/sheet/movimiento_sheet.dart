@@ -57,6 +57,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
     );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       setState(() {
         _fotoSeleccionada = picked;
         _fotoBytes = bytes;
@@ -77,6 +78,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
   Future<void> _cargarMateriales() async {
     final proyectoId = ProyectoActual.id;
     if (proyectoId == null) {
+      if (!mounted) return;
       setState(() {
         errorMateriales = 'No hay proyecto seleccionado';
         _loadingMateriales = false;
@@ -90,6 +92,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
           headers: await AuthHeader.getHeaders(),
         );
       });
+      if (!mounted) return;
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         List rawLista = decoded is List
@@ -107,6 +110,7 @@ class MovimientoSheetState extends State<MovimientoSheet> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMateriales = 'Sin conexión';
         _loadingMateriales = false;
