@@ -4,7 +4,6 @@ import 'package:build_check_app/services/http_interceptor.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'package:http_parser/http_parser.dart';
 
 import 'package:build_check_app/core/api_config.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
@@ -60,7 +59,7 @@ class FacturaService {
           filename:
               'factura_${DateTime.now().millisecondsSinceEpoch}.$detectedExtension',
           contentType:
-              detectedMimeType != null ? MediaType.parse(detectedMimeType) : null,
+              detectedMimeType != null ? http.MediaType.parse(detectedMimeType) : null,
         ),
       );
 
@@ -124,7 +123,7 @@ class FacturaService {
           filename:
               'factura_${DateTime.now().millisecondsSinceEpoch}.$detectedExtension',
           contentType:
-              detectedMimeType != null ? MediaType.parse(detectedMimeType) : null,
+              detectedMimeType != null ? http.MediaType.parse(detectedMimeType) : null,
         ),
       );
 

@@ -462,7 +462,7 @@ class _FacturaOcrReviewSheetState extends State<FacturaOcrReviewSheet> {
 
   Widget _buildUnidadDropdown(int index) {
     return DropdownButtonFormField<UnidadMedida>(
-      value: _itemUnidades[index],
+      initialValue: _itemUnidades[index],
       items: UnidadMedida.values
           .map(
             (unidad) => DropdownMenuItem(
