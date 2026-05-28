@@ -12,6 +12,7 @@ class SearchableList<T> extends StatefulWidget {
   final Widget? floatingActionButton; // botón flotante opcional
   final bool enableSortToggle;
   final String Function(T)? sortValue;
+  final bool Function(T)? filterPredicate;
 
   const SearchableList({
     super.key,
@@ -25,6 +26,7 @@ class SearchableList<T> extends StatefulWidget {
     this.floatingActionButton,
     this.enableSortToggle = false,
     this.sortValue,
+    this.filterPredicate,
   });
 
   @override
@@ -49,10 +51,15 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
     if (mounted) {
       setState(() {
         _allItems = items;
-        _filteredItems = _sortedItems(items);
+        _filteredItems = _sortedItems(_applyFilter(items));
         _loading = false;
       });
     }
+  }
+
+  List<T> _applyFilter(List<T> items) {
+    if (widget.filterPredicate == null) return items;
+    return items.where(widget.filterPredicate!).toList();
   }
 
   List<T> _sortedItems(List<T> items) {
@@ -71,11 +78,12 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
 
   void _filter(String query) {
     setState(() {
+      final base = _applyFilter(_allItems);
       if (query.isEmpty) {
-        _filteredItems = _sortedItems(_allItems);
+        _filteredItems = _sortedItems(base);
       } else {
         final lowerQuery = query.toLowerCase();
-        final filtered = _allItems.where((item) {
+        final filtered = base.where((item) {
           final searchText = widget.searchPredicate(item);
           return searchText.toLowerCase().contains(lowerQuery);
         }).toList();
@@ -153,28 +161,41 @@ class _SearchableListState<T> extends State<SearchableList<T>> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _filteredItems.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inbox_rounded, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    _allItems.isEmpty
-                        ? widget.emptyMessage
-                        : widget.noResultsMessage,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredItems.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (context, index) =>
-                  widget.itemBuilder(_filteredItems[index]),
+          : RefreshIndicator(
+              color: const Color(0xFF4CAF50),
+              onRefresh: _loadData,
+              child: _filteredItems.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inbox_rounded, size: 80, color: Colors.grey[300]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _allItems.isEmpty
+                                      ? widget.emptyMessage
+                                      : widget.noResultsMessage,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          widget.itemBuilder(_filteredItems[index]),
+                    ),
             ),
       floatingActionButton: widget.floatingActionButton,
     );

@@ -6,7 +6,8 @@ import 'package:build_check_app/ui/features/movimientos/widget/movimiento_card.d
 import 'package:build_check_app/ui/shared/widgets/list_card.dart';
 
 class MovimientosPage extends StatefulWidget {
-  const MovimientosPage({super.key});
+  final String? tipoFiltro;
+  const MovimientosPage({super.key, this.tipoFiltro});
 
   @override
   State<MovimientosPage> createState() => _MovimientosPageState();
@@ -35,6 +36,12 @@ class _MovimientosPageState extends State<MovimientosPage> {
     }
   }
 
+  String get _title {
+    if (widget.tipoFiltro == 'ENTRADA') return 'Historial de Entradas';
+    if (widget.tipoFiltro == 'SALIDA') return 'Historial de Salidas';
+    return 'Historial de Movimientos';
+  }
+
   @override
   Widget build(BuildContext context) {
     return SearchableList<MovimientoResumen>(
@@ -43,9 +50,12 @@ class _MovimientosPageState extends State<MovimientosPage> {
         final mapa = await MovimientoService().obtenerMapaMovimientos();
         return mapa.values.toList();
       },
+      filterPredicate: widget.tipoFiltro != null
+          ? (mov) => mov.tipoMovimiento.toUpperCase() == widget.tipoFiltro
+          : null,
       searchPredicate: (movimiento) => movimiento.materialNombre,
       itemBuilder: (movimiento) => MovimientoCard(movimiento: movimiento),
-      title: 'Historial de Movimientos',
+      title: _title,
       hintText: 'Buscar por material...',
       emptyMessage: 'No hay movimientos registrados aún',
       noResultsMessage: 'No se encontraron movimientos',

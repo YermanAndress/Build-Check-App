@@ -15,8 +15,11 @@ class ApiConfig {
   // static const String baseUrl =
   //     'http://192.168.80.13:8080/api'; // ← Dispositivo físico
 
+  // static const String baseUrl =
+  //     'https://paramount-sensitize-commuting.ngrok-free.dev/api'; // ← Dispositivo físico
+
   static const String baseUrl =
-      'https://paramount-sensitize-commuting.ngrok-free.dev/api'; // ← Dispositivo físico
+      'https://build-check-production.up.railway.app/api'; // ← Dispositivo físico
 
   static const String movimientos = '$baseUrl/movimientos-service/movimientos';
   static const String materiales = '$baseUrl/materiales-service/materiales';

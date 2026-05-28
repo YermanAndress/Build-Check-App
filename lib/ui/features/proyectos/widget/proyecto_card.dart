@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:build_check_app/models/proyecto_model.dart';
 import 'package:build_check_app/ui/shared/widgets/card_base.dart';
@@ -105,7 +106,7 @@ class ProyectoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            proyecto.fechaCreacion.toString().split("T").first,
+            DateFormat('dd/MM/yy').format(proyecto.fechaCreacion),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
