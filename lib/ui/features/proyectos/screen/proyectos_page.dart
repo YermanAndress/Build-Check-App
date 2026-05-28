@@ -171,9 +171,12 @@ class _ProyectosPageState extends State<ProyectosPage> {
         child: CircularProgressIndicator(color: Colors.green),
       );
     }
+
+    Widget content;
     if (error != null) {
-      return Center(
+      content = Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 40, color: Colors.red),
             const SizedBox(height: 10),
@@ -183,60 +186,71 @@ class _ProyectosPageState extends State<ProyectosPage> {
           ],
         ),
       );
-    }
-    if (proyectos.isEmpty) {
-      return const Center(
+    } else if (proyectos.isEmpty) {
+      content = const Center(
         child: Text(
           "No hay proyectos registrados",
           style: TextStyle(color: Colors.grey),
         ),
       );
-    }
-    if (filtrados.isEmpty) {
-      return const Center(
+    } else if (filtrados.isEmpty) {
+      content = const Center(
         child: Text(
           "No hay coincidencias",
           style: TextStyle(color: Colors.grey),
         ),
       );
-    }
-    final activos = <Proyecto>[];
-    final otros = <Proyecto>[];
-    final activoId = ProyectoActual.id;
-    for (final proyecto in filtrados) {
-      if (activoId != null && proyecto.id == activoId) {
-        activos.add(proyecto);
-      } else {
-        otros.add(proyecto);
+    } else {
+      final activos = <Proyecto>[];
+      final otros = <Proyecto>[];
+      final activoId = ProyectoActual.id;
+      for (final proyecto in filtrados) {
+        if (activoId != null && proyecto.id == activoId) {
+          activos.add(proyecto);
+        } else {
+          otros.add(proyecto);
+        }
       }
-    }
-    final ordenados = [...activos, ...otros];
+      final ordenados = [...activos, ...otros];
 
-    return ListView.separated(
-      itemCount: ordenados.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        final p = ordenados[i];
-        return ProyectoCard(
-          proyecto: p,
-          esActivo: p.id == activoId,
-          onTap: () async {
-            await _seleccionarProyecto(p);
-            if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProyectoDetails(
-                  proyectoId: p.id!,
-                  rolEnProyecto: p.rolProyecto,
+      content = ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: ordenados.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, i) {
+          final p = ordenados[i];
+          return ProyectoCard(
+            proyecto: p,
+            esActivo: p.id == activoId,
+            onTap: () async {
+              await _seleccionarProyecto(p);
+              if (!context.mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProyectoDetails(
+                    proyectoId: p.id!,
+                    rolEnProyecto: p.rolProyecto,
+                  ),
                 ),
-              ),
-            ).then((value) {
-              if (value == true) _cargar();
-            });
-          },
-        );
-      },
+              ).then((value) {
+                if (value == true) _cargar();
+              });
+            },
+          );
+        },
+      );
+    }
+
+    return RefreshIndicator(
+      color: const Color(0xFF4CAF50),
+      onRefresh: _cargar,
+      child: content is ListView
+          ? content
+          : ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [SizedBox(height: 200, child: content)],
+            ),
     );
   }
 }

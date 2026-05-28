@@ -4,8 +4,11 @@ import 'package:build_check_app/core/usuario_actual.dart';
 import 'package:build_check_app/services/role_helper.dart';
 import 'package:build_check_app/services/secure_storage.dart';
 import 'package:build_check_app/ui/features/login/screen/login_page.dart';
+import 'package:build_check_app/ui/features/materiales/screen/materiales_page.dart';
+import 'package:build_check_app/ui/features/movimientos/screen/movimientos_page.dart';
 import 'package:build_check_app/ui/features/perfil/screen/perfil_page.dart';
 import 'package:build_check_app/ui/features/proyectos/screen/admin_proyecto_page.dart';
+import 'package:build_check_app/ui/features/proyectos/screen/select_proyecto_page.dart';
 import 'package:flutter/material.dart';
 import 'package:build_check_app/core/proyecto_actual.dart';
 
@@ -187,7 +190,14 @@ class _DashboardPageState extends State<DashboardPage> {
               color: Color(0xFF555555),
             ),
             onSelected: (value) async {
-              if (value == 'admin') {
+              if (value == 'cambiar_proyecto') {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SelectProyectoPage()),
+                );
+                if (!mounted) return;
+                setState(() {});
+              } else if (value == 'admin') {
                 final prefs = await SharedPreferences.getInstance();
                 if (!context.mounted) return;
                 final proyectoId = prefs.getInt("proyectoActual");
@@ -295,6 +305,17 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'cambiar_proyecto',
+                child: const Row(
+                  children: [
+                    Icon(Icons.swap_horiz, color: Color(0xFF424242)),
+                    SizedBox(width: 10),
+                    Text("Cambiar proyecto"),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -310,11 +331,15 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(width: 4),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: RefreshIndicator(
+        color: const Color(0xFF4CAF50),
+        onRefresh: _cargarStatsHoy,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // ── Stats grid ──
             Row(
               children: [
@@ -328,6 +353,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     backgroundColor: Colors.white,
                     valueColor: const Color(0xFF1A1A1A),
                     isLoading: _cargandoStats,
+                    onTap: _cargandoStats
+                        ? null
+                        : () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const MaterialesPage()),
+                            ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -351,27 +383,45 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Expanded(
                   child: StatCard(
-                    label: 'Salidas hoy',
+                    label: 'Salidas',
                     value: _cargandoStats ? '—' : '$_salidasHoy',
-                    sublabel: 'Movimientos',
+                    sublabel: 'Ver todas',
                     icon: Icons.trending_down,
                     iconColor: const Color(0xFFE57373),
                     backgroundColor: const Color(0xFFFFF0F0),
                     valueColor: const Color(0xFF1A1A1A),
                     isLoading: _cargandoStats,
+                    onTap: _cargandoStats
+                        ? null
+                        : () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const MovimientosPage(tipoFiltro: 'SALIDA'),
+                              ),
+                            ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: StatCard(
-                    label: 'Entradas hoy',
+                    label: 'Entradas',
                     value: _cargandoStats ? '—' : '$_entradasHoy',
-                    sublabel: 'Movimientos',
+                    sublabel: 'Ver todas',
                     icon: Icons.subdirectory_arrow_left,
                     iconColor: const Color(0xFF4CAF50),
                     backgroundColor: const Color(0xFFEDF7EE),
                     valueColor: const Color(0xFF1A1A1A),
                     isLoading: _cargandoStats,
+                    onTap: _cargandoStats
+                        ? null
+                        : () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const MovimientosPage(tipoFiltro: 'ENTRADA'),
+                              ),
+                            ),
                   ),
                 ),
               ],
@@ -543,6 +593,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
