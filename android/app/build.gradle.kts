@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.build_check_app"
+    namespace = "co.edu.uceva.buildcheck"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.build_check_app"
+        applicationId = "co.edu.uceva.buildcheck"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
